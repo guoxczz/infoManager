@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.dubbo.config.annotation.Service;
 import com.alibaba.fastjson.JSON;
 import com.guoxc.info.iservice.IInfoManagerSV;
-import com.gxc.info.bean.info.StudentInfo;
+import com.guoxc.info.bean.info.StudentInfo;
 
 @Service
 public class InfoManagerImpl implements IInfoManagerSV{

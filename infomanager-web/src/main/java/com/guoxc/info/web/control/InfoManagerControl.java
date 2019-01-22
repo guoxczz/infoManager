@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.fastjson.JSON;
 import com.guoxc.info.iservice.IInfoManagerSV;
-import com.gxc.info.bean.info.StudentInfo;
+import com.guoxc.info.bean.info.StudentInfo;
 
 @RestController
 @RequestMapping("/info")

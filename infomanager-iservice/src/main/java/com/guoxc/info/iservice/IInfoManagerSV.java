@@ -1,6 +1,6 @@
 package com.guoxc.info.iservice;
 
-import com.gxc.info.bean.info.StudentInfo;
+import com.guoxc.info.bean.info.StudentInfo;
 
 public interface IInfoManagerSV {
 	
