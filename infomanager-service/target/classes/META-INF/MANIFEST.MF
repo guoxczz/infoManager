@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Implementation-Title: infomanager-service
+Implementation-Version: 1.0
+Built-By: Lenovo
+Implementation-Vendor-Id: com.guoxc.info
+Build-Jdk: 1.8.0_131
+Implementation-URL: https://projects.spring.io/spring-boot/#/spring-bo
+ ot-starter-parent/infoManager/infomanager-service
+Created-By: Maven Integration for Eclipse
+
