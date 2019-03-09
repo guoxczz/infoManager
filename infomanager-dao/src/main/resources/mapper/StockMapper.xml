@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.StockDao" >
+	<insert id="insertStockDay"  parameterType="com.guoxc.info.bean.info.StockDayBean" >
+	insert into T_STOCK_DAY (stockcode, opertime, openprice, highprice, lowprice,
+		closeprice, volume, turnover)
+		values( #{stockCode,jdbcType=VARCHAR}, #{operTime,jdbcType=DATE},
+		#{openPrice,jdbcType=DECIMAL}, #{highPrice,jdbcType=DECIMAL}, #{lowPrice,jdbcType=DECIMAL},
+		#{closePrice,jdbcType=DECIMAL}, #{volume,jdbcType=INTEGER},
+		#{turnover,jdbcType=INTEGER})
+	</insert>
+</mapper>
