@@ -12,24 +12,38 @@
      <dependency>
             <groupId>com.guoxc.info</groupId>
             <artifactId>infomanager-beans</artifactId>
-            <version>1.0</version>
+             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.guoxc.info</groupId>
             <artifactId>infomanager-iservice</artifactId>
-            <version>1.0</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
+       <dependency>
+           <groupId>com.guoxc.info</groupId>
+           <artifactId>infomanager-service</artifactId>
+           <version>0.0.1-SNAPSHOT</version>
+       </dependency>
+       <dependency>
+           <groupId>com.guoxc.info</groupId>
+           <artifactId>infomanager-dao</artifactId>
+           <version>0.0.1-SNAPSHOT</version>
+       </dependency>
         <dependency>
             <groupId>com.guoxc.info</groupId>
             <artifactId>infoManager-utils</artifactId>
-            <version>1.0</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
    
      <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
      </dependency>
-     
+       <dependency>
+           <groupId>com.github.briandilley.jsonrpc4j</groupId>
+           <artifactId>jsonrpc4j</artifactId>
+           <version>1.5.3</version>
+       </dependency>
        <dependency>
             <groupId>io.dubbo.springboot</groupId>
             <artifactId>spring-boot-starter-dubbo</artifactId>
@@ -55,6 +69,48 @@
 		    <artifactId>log4j</artifactId>
 		    <version>1.2.17</version>
 		</dependency>
+
+
+
+
+       <dependency>
+           <groupId>org.mybatis.spring.boot</groupId>
+           <artifactId>mybatis-spring-boot-starter</artifactId>
+           <version>1.3.2</version>
+       </dependency>
+       <dependency>
+           <groupId>com.github.pagehelper</groupId>
+           <artifactId>pagehelper-spring-boot-starter</artifactId>
+           <version>1.2.5</version>
+       </dependency>
+
+
+       <dependency>
+
+           <groupId>org.springframework.boot</groupId>
+
+           <artifactId>spring-boot-starter-logging</artifactId>
+
+       </dependency>
+
+       <!-- alibaba的druid数据库连接池 -->
+       <dependency>
+           <groupId>com.alibaba</groupId>
+           <artifactId>druid-spring-boot-starter</artifactId>
+           <version>1.1.9</version>
+       </dependency>
+       <dependency>
+           <groupId>com.alibaba</groupId>
+           <artifactId>druid</artifactId>
+           <version>1.0.26</version>
+       </dependency>
+       <dependency>
+           <groupId>oracle</groupId>
+           <artifactId>ojdbc14</artifactId>
+           <version>10.2.0.4</version>
+       </dependency>
+
+
    </dependencies>
    
    

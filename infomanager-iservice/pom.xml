@@ -7,10 +7,10 @@
   </parent>
   <artifactId>infomanager-iservice</artifactId>
    <dependencies>
-   <dependency>
-            <groupId>com.guoxc.info</groupId>
-            <artifactId>infomanager-beans</artifactId>
-            <version>1.0</version>
-    </dependency>
+       <dependency>
+           <groupId>com.guoxc.info</groupId>
+           <artifactId>infomanager-beans</artifactId>
+           <version>0.0.1-SNAPSHOT</version>
+       </dependency>
     </dependencies>
 </project>

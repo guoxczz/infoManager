@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="infomanager-beans" />
+        <module name="infomanager-dao" />
+        <module name="infomanager-iservice" />
+        <module name="infomanager-service" />
+        <module name="infoManager-utils" />
+        <module name="infomanager-web" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="infoManager" target="1.8" />
+      <module name="infomanager-beans" target="1.8" />
+      <module name="infomanager-dao" target="1.8" />
+      <module name="infomanager-iservice" target="1.8" />
+      <module name="infomanager-service" target="1.8" />
+      <module name="infoManager-utils" target="1.8" />
+      <module name="infomanager-web" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

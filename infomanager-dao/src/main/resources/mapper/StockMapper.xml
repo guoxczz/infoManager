@@ -4,11 +4,34 @@
 
 <mapper namespace="com.guoxc.info.dao.StockDao" >
 	<insert id="insertStockDay"  parameterType="com.guoxc.info.bean.info.StockDayBean" >
-	insert into T_STOCK_DAY (stockcode, opertime, openprice, highprice, lowprice,
+	insert into T_STOCK_DAY (stockcode,operTime, openprice, highprice, lowprice,
 		closeprice, volume, turnover)
-		values( #{stockCode,jdbcType=VARCHAR}, #{operTime,jdbcType=DATE},
-		#{openPrice,jdbcType=DECIMAL}, #{highPrice,jdbcType=DECIMAL}, #{lowPrice,jdbcType=DECIMAL},
-		#{closePrice,jdbcType=DECIMAL}, #{volume,jdbcType=INTEGER},
+		values( #{stockCode,jdbcType=VARCHAR}, #{operTime,jdbcType=TIMESTAMP},
+		#{openPrice,jdbcType=FLOAT}, #{highPrice,jdbcType=FLOAT}, #{lowPrice,jdbcType=FLOAT},
+		#{closePrice,jdbcType=FLOAT}, #{volume,jdbcType=INTEGER},
 		#{turnover,jdbcType=INTEGER})
 	</insert>
+
+
+	<insert id="insertStockDayList"  parameterType="java.util.List" >
+	insert into T_STOCK_DAY_ZS (stockcode,operTime, openprice, highprice, lowprice,
+		closeprice, volume, turnover)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.openPrice,jdbcType=FLOAT},
+			#{item.highPrice,jdbcType=FLOAT},
+			#{item.lowPrice,jdbcType=FLOAT},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.turnover,jdbcType=INTEGER}
+			from dual
+		</foreach>
+
+
+
+
+	</insert>
+
 </mapper>

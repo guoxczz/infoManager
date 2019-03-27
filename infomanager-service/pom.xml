@@ -13,17 +13,17 @@
        <dependency>
             <groupId>com.guoxc.info</groupId>
             <artifactId>infomanager-beans</artifactId>
-            <version>1.0</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
        <dependency>
             <groupId>com.guoxc.info</groupId>
             <artifactId>infomanager-iservice</artifactId>
-            <version>1.0</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.guoxc.info</groupId>
             <artifactId>infoManager-utils</artifactId>
-            <version>1.0</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
    
      <dependency>

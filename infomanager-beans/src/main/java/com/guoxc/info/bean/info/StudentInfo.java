@@ -6,7 +6,7 @@ import com.guoxc.info.bean.base.BaseBean;
 
 @SuppressWarnings("serial")
 public class StudentInfo  extends  BaseBean{
-	private Long id; // ����ID
+	private Long id; //
     private String name; 
     private String sex; 
     private Date birthday; 

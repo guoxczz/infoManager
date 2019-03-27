@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/infoManager.iml" filepath="$PROJECT_DIR$/.idea/infoManager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/infoManager-utils/infoManager-utils.iml" filepath="$PROJECT_DIR$/infoManager-utils/infoManager-utils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/infomanager-beans/infomanager-beans.iml" filepath="$PROJECT_DIR$/infomanager-beans/infomanager-beans.iml" />
+      <module fileurl="file://$PROJECT_DIR$/infomanager-dao/infomanager-dao.iml" filepath="$PROJECT_DIR$/infomanager-dao/infomanager-dao.iml" />
+      <module fileurl="file://$PROJECT_DIR$/infomanager-iservice/infomanager-iservice.iml" filepath="$PROJECT_DIR$/infomanager-iservice/infomanager-iservice.iml" />
+      <module fileurl="file://$PROJECT_DIR$/infomanager-service/infomanager-service.iml" filepath="$PROJECT_DIR$/infomanager-service/infomanager-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/infomanager-web/infomanager-web.iml" filepath="$PROJECT_DIR$/infomanager-web/infomanager-web.iml" />
+    </modules>
+  </component>
+</project>
