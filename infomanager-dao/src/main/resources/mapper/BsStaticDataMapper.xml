@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.BsStaticDataDao" >
+	<select id="getCodeValue"  parameterType="string"  resultType="string">
+	 select code_value  from BS_STATIC_DATA  where code_name= #{codeName}
+	</select>
+
+	<update id="updateCodeValue"  parameterType="com.guoxc.info.bean.info.BsStaticDataBean"  >
+	update BS_STATIC_DATA  set  code_value= #{codeValue}  where  code_name= #{codeName}
+	</update>
+
+
+</mapper>

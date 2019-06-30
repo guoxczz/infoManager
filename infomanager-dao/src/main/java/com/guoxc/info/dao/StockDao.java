@@ -8,6 +8,8 @@ public interface StockDao {
 
     void insertStockDay(StockDayBean bean );
 
+    void updateStockDay(StockDayBean bean );
+
     void insertStockDayList( List beans );
 
 

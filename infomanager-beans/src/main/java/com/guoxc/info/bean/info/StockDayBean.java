@@ -2,6 +2,7 @@ package com.guoxc.info.bean.info;
 
 import com.guoxc.info.bean.base.BaseBean;
 
+import java.sql.Timestamp;
 import java.util.Date;
 
 public class StockDayBean  extends BaseBean {
@@ -13,6 +14,14 @@ public class StockDayBean  extends BaseBean {
     private float closePrice;
     private double volume;
     private double turnover;
+
+    private int bigInP ;
+    private int bignetInP;
+    private int smallInP;
+    private int smallNetInP;
+    private Date  highTime;
+    private Date lowTime;
+
 
     public String getStockCode() {
         return stockCode;
@@ -76,5 +85,53 @@ public class StockDayBean  extends BaseBean {
 
     public void setTurnover(double turnover) {
         this.turnover = turnover;
+    }
+
+    public int getBigInP() {
+        return bigInP;
+    }
+
+    public void setBigInP(int bigInP) {
+        this.bigInP = bigInP;
+    }
+
+    public int getBignetInP() {
+        return bignetInP;
+    }
+
+    public void setBignetInP(int bignetInP) {
+        this.bignetInP = bignetInP;
+    }
+
+    public int getSmallInP() {
+        return smallInP;
+    }
+
+    public void setSmallInP(int smallInP) {
+        this.smallInP = smallInP;
+    }
+
+    public int getSmallNetInP() {
+        return smallNetInP;
+    }
+
+    public void setSmallNetInP(int smallNetInP) {
+        this.smallNetInP = smallNetInP;
+    }
+
+    public Date getHighTime() {
+        return highTime;
+    }
+
+    public void setHighTime(Date highTime) {
+        this.highTime = highTime;
+    }
+
+    public Date getLowTime() {
+        return lowTime;
+    }
+
+    public void setLowTime(Date lowTime) {
+        this.lowTime = lowTime;
     }
 }

@@ -1,11 +1,10 @@
 package com.guoxc.info.web.services;
 
-import com.googlecode.jsonrpc4j.JsonRpcHttpClient;
-import com.googlecode.jsonrpc4j.JsonRpcParam;
-import com.googlecode.jsonrpc4j.StreamServer;
-import com.googlecode.jsonrpc4j.VarArgsUtil;
+import com.guoxc.info.bean.info.BsStaticDataBean;
 import com.guoxc.info.bean.info.StockDayBean;
+import com.guoxc.info.dao.BsStaticDataDao;
 import com.guoxc.info.dao.StockDao;
+import com.guoxc.info.mapper.BsStaticDataMapper;
 import com.guoxc.info.utils.DateUtil;
 import com.guoxc.info.utils.FileUtil;
 import com.guoxc.info.web.control.StockControl;
@@ -16,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.io.File;
-import java.text.ParseException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,22 +23,72 @@ import java.util.List;
 public class StockService {
     private final static Logger logger = LoggerFactory.getLogger(StockControl.class);
     @Autowired
- private StockDao stockDao  ;
+    private StockDao stockDao  ;
+
+    @Autowired
+    private BsStaticDataDao bsStaticDataDao;
+
 
     public String  putRecentData2StockData(){
 
         StockDayBean bean = new StockDayBean();
-        File[] files = new File("E:\\stock\\data\\zhishu\\").listFiles();
-       for(File file :files ){
-           putStockDataFile2DDB(file);
-       }
+        String lastDealDayStr = bsStaticDataDao.getCodeValue("STOCK_DEAL_TIME_STOCK_DAY");
+        if(lastDealDayStr != null){
+            try {
+                Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr,"yyyy-MM-dd");
+                if(lastDealDay.before(DateUtil.getCurrentDate())){
+
+                    File[] files = new File("E:\\stock\\data\\dayadd\\").listFiles();
+                    for(File file :files ){
+                        putStockDataFile2DDB(file, lastDealDay);
+                    }
+
+                    BsStaticDataBean bsStaticDataBean = new BsStaticDataBean();
+                    bsStaticDataBean.setCodeName("STOCK_DEAL_TIME_STOCK_DAY");
+                    bsStaticDataBean.setCodeValue(DateUtil.getCurrentDateString(DateUtil.DATE_PATTERN.YYYY_MM_DD));
+                    bsStaticDataDao.updateCodeValue(bsStaticDataBean);
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+
+        }
+
+
+
+
+
+
+
        //603682 sz002951 002952 002958
 
   return "success";
     }
 
 
-    private void  putStockDataFile2DDB(File file ) {
+
+    public String  putRecentZhiShu2StockData(){
+
+        StockDayBean bean = new StockDayBean();
+        File[] files = new File("E:\\stock\\data\\zhishu\\").listFiles();
+        for(File file :files ){
+
+        }
+
+
+
+        //603682 sz002951 002952 002958
+
+        return "success";
+    }
+
+
+
+
+
+    private void  putStockDataFile2DDB(File file,Timestamp lastDealDay ) {
 
     try{
 
@@ -59,21 +108,24 @@ public class StockService {
              //2010/01/04	6.69	6.70	6.41	6.42	66191338	1419984128.00
              String[] cols = line.split("\t");
              if(cols.length>5){
-                 StockDayBean bean = new StockDayBean();
-                 bean.setStockCode(stockCode);
-                 bean.setOperTime(DateUtil.convertStringToTimestamp(cols[0],"yyyy/MM/dd"));
-                 bean.setOpenPrice(Float.valueOf(cols[1]));
-                 bean.setHighPrice(Float.valueOf(cols[2]));
-                 bean.setLowPrice(Float.valueOf(cols[3]));
-                 bean.setClosePrice(Float.valueOf(cols[4]));
-                 bean.setVolume(Double.valueOf(cols[5])/100);
-                 bean.setTurnover( Double.valueOf(cols[6].substring(0,cols[6].length()-3))/10000);
-                 stockList.add(bean);
+                 if(DateUtil.convertStringToTimestamp(cols[0],"yyyy/MM/dd").after(lastDealDay)){
+                     StockDayBean bean = new StockDayBean();
+                     bean.setStockCode(stockCode);
+                     bean.setOperTime(DateUtil.convertStringToTimestamp(cols[0],"yyyy/MM/dd"));
+                     bean.setOpenPrice(Float.valueOf(cols[1]));
+                     bean.setHighPrice(Float.valueOf(cols[2]));
+                     bean.setLowPrice(Float.valueOf(cols[3]));
+                     bean.setClosePrice(Float.valueOf(cols[4]));
+                     bean.setVolume(Double.valueOf(cols[5])/100);
+                     bean.setTurnover( Double.valueOf(cols[6].substring(0,cols[6].length()-3))/10000);
+                     stockList.add(bean);
+                 }
              }
          }
         logger.info(stockCode+"stockList size="+stockList.size());
-        stockDao.insertStockDayList(stockList);
-
+         if(stockList.size()>0){
+             stockDao.insertStockDayList(stockList);
+         }
     }catch (Exception e){
         logger.error("putStockDataFile2DDB_err",e);
     }

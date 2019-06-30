@@ -13,8 +13,17 @@
 	</insert>
 
 
+	<update id="updateStockDay"  parameterType="com.guoxc.info.bean.info.StockDayBean" >
+	insert into T_STOCK_DAY (stockcode,operTime, openprice, highprice, lowprice,
+		closeprice, volume, turnover)
+		values( #{stockCode,jdbcType=VARCHAR}, #{operTime,jdbcType=TIMESTAMP},
+		#{openPrice,jdbcType=FLOAT}, #{highPrice,jdbcType=FLOAT}, #{lowPrice,jdbcType=FLOAT},
+		#{closePrice,jdbcType=FLOAT}, #{volume,jdbcType=INTEGER},
+		#{turnover,jdbcType=INTEGER})
+	</update>
+
 	<insert id="insertStockDayList"  parameterType="java.util.List" >
-	insert into T_STOCK_DAY_ZS (stockcode,operTime, openprice, highprice, lowprice,
+	insert into T_STOCK_DAY (stockcode,operTime, openprice, highprice, lowprice,
 		closeprice, volume, turnover)
 		<foreach collection="list" index="" item="item" separator="union all">
 			select

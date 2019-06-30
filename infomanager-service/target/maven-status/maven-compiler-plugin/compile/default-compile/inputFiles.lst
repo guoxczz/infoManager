@@ -1,2 +1,4 @@
-E:\demo\infoManager\infomanager-service\src\main\java\com\guoxc\info\service\ServiceApplication.java
-E:\demo\infoManager\infomanager-service\src\main\java\com\guoxc\info\service\impl\InfoManagerImpl.java
+D:\stock\infoManager\infomanager-service\src\main\java\com\guoxc\info\service\impl\InfoManagerImpl.java
+D:\stock\infoManager\infomanager-service\src\main\java\com\guoxc\info\service\mq\RocketmqConsumer.java
+D:\stock\infoManager\infomanager-service\src\main\java\com\guoxc\info\service\mq\RocketmqPullConsumer.java
+D:\stock\infoManager\infomanager-service\src\main\java\com\guoxc\info\service\ServiceApplication.java
