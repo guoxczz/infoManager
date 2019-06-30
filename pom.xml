@@ -18,13 +18,18 @@
         <cmos.control-finalName>infomanager-control</cmos.control-finalName>
           <dubbo-spring-boot>1.0.0</dubbo-spring-boot>
     </properties>
-  
 
- <groupId>org.springframework.boot</groupId>
 
-<artifactId>spring-boot-starter-parent</artifactId>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
 
-<version>2.1.0.RELEASE</version>
+        <artifactId>spring-boot-starter-parent</artifactId>
+
+        <version>2.1.0.RELEASE</version>
+
+        <relativePath/> <!-- lookup parent from repository -->
+
+    </parent>
 
         <profiles>
             <profile>
