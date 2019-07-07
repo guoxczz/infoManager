@@ -1,2 +1,5 @@
+com\guoxc\info\service\mq\RocketmqPullConsumer$1.class
 com\guoxc\info\service\ServiceApplication.class
 com\guoxc\info\service\impl\InfoManagerImpl.class
+com\guoxc\info\service\mq\RocketmqConsumer.class
+com\guoxc\info\service\mq\RocketmqPullConsumer.class

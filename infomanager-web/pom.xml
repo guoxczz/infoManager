@@ -128,7 +128,7 @@
    
    
    <build>
-       <finalName>${finalName}</finalName>
+
         <plugins>
         <!-- java编译插件-->
             <plugin>
@@ -139,6 +139,14 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <configuration>
+
                 </configuration>
             </plugin>
         </plugins>

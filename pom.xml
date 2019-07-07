@@ -17,6 +17,7 @@
         <cmos.core-finalName>infomanager-core</cmos.core-finalName>
         <cmos.control-finalName>infomanager-control</cmos.control-finalName>
           <dubbo-spring-boot>1.0.0</dubbo-spring-boot>
+       <spring-boot.version>1.4.1.RELEASE</spring-boot.version>
     </properties>
 
 

@@ -1,0 +1,3 @@
+com\guoxc\info\web\WebApplication.class
+com\guoxc\info\web\services\StockService.class
+com\guoxc\info\web\control\StockControl.class
