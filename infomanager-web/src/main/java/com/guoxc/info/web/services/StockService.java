@@ -131,6 +131,7 @@ public class StockService {
 
             try {
                 Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");
+                Timestamp beginTime = DateUtil.addMonth(lastDealDay,3);
                 if (lastDealDay.before(DateUtil.getCurrentDate())) {
                     File file = new File(filePath);
                     if(file.exists()){
