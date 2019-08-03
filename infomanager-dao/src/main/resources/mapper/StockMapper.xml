@@ -13,18 +13,39 @@
 	</insert>
 
 
-	<update id="updateStockDay"  parameterType="com.guoxc.info.bean.info.StockDayBean" >
-	insert into T_STOCK_DAY (stockcode,operTime, openprice, highprice, lowprice,
-		closeprice, volume, turnover)
-		values( #{stockCode,jdbcType=VARCHAR}, #{operTime,jdbcType=TIMESTAMP},
-		#{openPrice,jdbcType=FLOAT}, #{highPrice,jdbcType=FLOAT}, #{lowPrice,jdbcType=FLOAT},
-		#{closePrice,jdbcType=FLOAT}, #{volume,jdbcType=INTEGER},
-		#{turnover,jdbcType=INTEGER})
-	</update>
+
 
 	<insert id="insertStockDayList"  parameterType="java.util.List" >
 	insert into T_STOCK_DAY (stockcode,operTime, openprice, highprice, lowprice,
-		closeprice, volume, turnover)
+	closeprice, volume, turnover,C5AVG,C20AVG,C60AVG,V5AVG,V20AVG,V60AVG,PRECLOSEPRICE,PRICE_RATE,SWING,V20_RATE)
+	<foreach collection="list" index="" item="item" separator="union all">
+		select
+		#{item.stockCode,jdbcType=VARCHAR},
+		#{item.operTime,jdbcType=TIMESTAMP},
+		#{item.openPrice,jdbcType=FLOAT},
+		#{item.highPrice,jdbcType=FLOAT},
+		#{item.lowPrice,jdbcType=FLOAT},
+		#{item.closePrice,jdbcType=FLOAT},
+		#{item.volume,jdbcType=INTEGER},
+		#{item.turnover,jdbcType=INTEGER},
+		#{item.c5Avg,jdbcType=FLOAT},
+		#{item.c20Avg,jdbcType=FLOAT},
+		#{item.c60Avg,jdbcType=FLOAT},
+		#{item.v5Avg,jdbcType=INTEGER},
+		#{item.v20Avg,jdbcType=INTEGER},
+		#{item.v60Avg,jdbcType=INTEGER},
+		#{item.preClosePrice,jdbcType=FLOAT},
+		#{item.priceRate,jdbcType=FLOAT},
+		#{item.swing,jdbcType=FLOAT},
+		#{item.v20Rate,jdbcType=FLOAT}
+		from dual
+	</foreach>
+</insert>
+
+
+	<insert id="insertStockDayZSList"  parameterType="java.util.List" >
+		insert into T_STOCK_DAY_ZS (stockcode,operTime, openprice, highprice, lowprice,
+		closeprice, volume, turnover,C5AVG,C20AVG,C60AVG,V5AVG,V20AVG,V60AVG,PRECLOSEPRICE,PRICE_RATE,SWING,V20_RATE)
 		<foreach collection="list" index="" item="item" separator="union all">
 			select
 			#{item.stockCode,jdbcType=VARCHAR},
@@ -34,13 +55,62 @@
 			#{item.lowPrice,jdbcType=FLOAT},
 			#{item.closePrice,jdbcType=FLOAT},
 			#{item.volume,jdbcType=INTEGER},
-			#{item.turnover,jdbcType=INTEGER}
+			#{item.turnover,jdbcType=INTEGER},
+			#{item.c5Avg,jdbcType=FLOAT},
+			#{item.c20Avg,jdbcType=FLOAT},
+			#{item.c60Avg,jdbcType=FLOAT},
+			#{item.v5Avg,jdbcType=INTEGER},
+			#{item.v20Avg,jdbcType=INTEGER},
+			#{item.v60Avg,jdbcType=INTEGER},
+			#{item.preClosePrice,jdbcType=FLOAT},
+			#{item.priceRate,jdbcType=FLOAT},
+			#{item.swing,jdbcType=FLOAT},
+			#{item.v20Rate,jdbcType=FLOAT}
 			from dual
 		</foreach>
+	</insert>
 
 
 
+	<insert id="insertStockMinuteList"  parameterType="java.util.List" >
+		insert into T_STOCK_MINUTE (stockcode,operTime, openprice, highprice, lowprice,
+		closeprice, volume, turnover,PRICE_RATE,SWING,VOL_RATE)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.openPrice,jdbcType=FLOAT},
+			#{item.highPrice,jdbcType=FLOAT},
+			#{item.lowPrice,jdbcType=FLOAT},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.turnover,jdbcType=INTEGER},
+			#{item.priceRate,jdbcType=INTEGER},
+			#{item.swing,jdbcType=INTEGER},
+			#{item.volRate,jdbcType=INTEGER},
+			from dual
+		</foreach>
+	</insert>
 
+
+	<insert id="insertStockMinuteZSList"  parameterType="java.util.List" >
+		insert into T_STOCK_MINUTE_ZS (stockcode,operTime, openprice, highprice, lowprice,
+		closeprice, volume, turnover,PRICE_RATE,SWING,VOL_RATE)values
+		<foreach collection="list" index="" item="item" separator=",">
+			(
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.openPrice,jdbcType=FLOAT},
+			#{item.highPrice,jdbcType=FLOAT},
+			#{item.lowPrice,jdbcType=FLOAT},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.turnover,jdbcType=INTEGER},
+			#{item.priceRate,jdbcType=INTEGER},
+			#{item.swing,jdbcType=INTEGER},
+			#{item.volRate,jdbcType=INTEGER}
+			)
+		</foreach>
 	</insert>
 
 </mapper>

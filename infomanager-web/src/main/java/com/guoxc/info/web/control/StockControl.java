@@ -18,25 +18,77 @@ public class StockControl {
    private StockService stockService;
 
 
-	
-	
-	@RequestMapping("/putStockData")
+    @RequestMapping("/queryTest")
     @ResponseBody
-    String putStockData() {
-
-
-
+    String queryTest() {
         String result = null;
-    try{
-          result =    stockService.putRecentData2StockData();
+        try {
+             stockService.query();
+            result = "success";
+        } catch (Exception e) {
+            logger.info("err1", e);
+            result = "error";
+        }
+        return result;
+    }
 
-        }catch (Exception e){
 
-        logger.info("err1",e);
-        result="error";
-     }
 
-      return result;
-}
+    @RequestMapping("/saveStockData")
+    @ResponseBody
+    String saveStockData() {
+        String result = null;
+        try {
+            result = stockService.putRecentData2StockData();
+        } catch (Exception e) {
+            logger.info("err1", e);
+            result = "error";
+        }
+        return result;
+    }
+
+
+    @RequestMapping("/saveStockMinuteData")
+    @ResponseBody
+    String saveStockMinuteData() {
+        String result = null;
+        try {
+            result = stockService.saveStockMinuteData();
+        } catch (Exception e) {
+            logger.info("err1", e);
+            result = "error";
+        }
+
+        return result;
+    }
+
+
+    @RequestMapping("/saveStockZSData")
+    @ResponseBody
+    String saveStockZSData() {
+        String result = null;
+        try {
+            result = stockService.saveRecentZSData2StockData();
+        } catch (Exception e) {
+            logger.info("err1", e);
+            result = "error";
+        }
+
+        return result;
+    }
+
+    @RequestMapping("/saveStockZSMinuteData")
+    @ResponseBody
+    String saveStockZSMinuteData() {
+        String result = null;
+        try {
+            result = stockService.saveStockZSMinuteData();
+        } catch (Exception e) {
+            logger.info("err1", e);
+            result = "error";
+        }
+
+        return result;
+    }
 
 }

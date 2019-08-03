@@ -7,9 +7,16 @@
 	 select code_value  from BS_STATIC_DATA  where code_name= #{codeName}
 	</select>
 
+
+	<select id="getCodeValue2"  parameterType="Map"  resultType="string">
+	 select code_value  from BS_STATIC_DATA  where code_name= #{codeName}
+	</select>
+
 	<update id="updateCodeValue"  parameterType="com.guoxc.info.bean.info.BsStaticDataBean"  >
 	update BS_STATIC_DATA  set  code_value= #{codeValue}  where  code_name= #{codeName}
 	</update>
+
+
 
 
 </mapper>

@@ -8,9 +8,14 @@ public interface StockDao {
 
     void insertStockDay(StockDayBean bean );
 
-    void updateStockDay(StockDayBean bean );
 
     void insertStockDayList( List beans );
+
+    void insertStockMinuteList( List beans );
+
+    void insertStockMinuteZSList( List beans );
+
+    void insertStockDayZSList( List beans );
 
 
 }

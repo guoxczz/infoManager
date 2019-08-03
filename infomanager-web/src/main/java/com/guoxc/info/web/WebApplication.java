@@ -6,10 +6,12 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.util.Properties;
 
 
+@EnableTransactionManagement
 @SpringBootApplication
 @MapperScan("com.guoxc.info.dao")
 public class WebApplication {
@@ -17,7 +19,6 @@ public class WebApplication {
 	public static void main(String[] args) {
 
 		 SpringApplication.run(WebApplication.class, args);
-
 	}
 
 }
