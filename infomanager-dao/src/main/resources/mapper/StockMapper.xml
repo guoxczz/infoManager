@@ -35,9 +35,9 @@
 		#{item.v20Avg,jdbcType=INTEGER},
 		#{item.v60Avg,jdbcType=INTEGER},
 		#{item.preClosePrice,jdbcType=FLOAT},
-		#{item.priceRate,jdbcType=FLOAT},
-		#{item.swing,jdbcType=FLOAT},
-		#{item.v20Rate,jdbcType=FLOAT}
+		#{item.priceRate,jdbcType=INTEGER},
+		#{item.swing,jdbcType=INTEGER},
+		#{item.v20Rate,jdbcType=INTEGER}
 		from dual
 	</foreach>
 </insert>
@@ -63,17 +63,17 @@
 			#{item.v20Avg,jdbcType=INTEGER},
 			#{item.v60Avg,jdbcType=INTEGER},
 			#{item.preClosePrice,jdbcType=FLOAT},
-			#{item.priceRate,jdbcType=FLOAT},
-			#{item.swing,jdbcType=FLOAT},
-			#{item.v20Rate,jdbcType=FLOAT}
+			#{item.priceRate,jdbcType=INTEGER},
+			#{item.swing,jdbcType=INTEGER},
+			#{item.v20Rate,jdbcType=INTEGER}
 			from dual
 		</foreach>
 	</insert>
 
 
 
-	<insert id="insertStockMinuteList"  parameterType="java.util.List" >
-		insert into T_STOCK_MINUTE (stockcode,operTime, openprice, highprice, lowprice,
+	<insert id="insertStockMinuteList"  parameterType="Map" >
+		insert into ${tableName} (stockcode,operTime, openprice, highprice, lowprice,
 		closeprice, volume, turnover,PRICE_RATE,SWING,VOL_RATE)
 		<foreach collection="list" index="" item="item" separator="union all">
 			select
@@ -87,7 +87,7 @@
 			#{item.turnover,jdbcType=INTEGER},
 			#{item.priceRate,jdbcType=INTEGER},
 			#{item.swing,jdbcType=INTEGER},
-			#{item.volRate,jdbcType=INTEGER},
+			#{item.v20Rate,jdbcType=INTEGER}
 			from dual
 		</foreach>
 	</insert>
@@ -95,9 +95,9 @@
 
 	<insert id="insertStockMinuteZSList"  parameterType="java.util.List" >
 		insert into T_STOCK_MINUTE_ZS (stockcode,operTime, openprice, highprice, lowprice,
-		closeprice, volume, turnover,PRICE_RATE,SWING,VOL_RATE)values
-		<foreach collection="list" index="" item="item" separator=",">
-			(
+		closeprice, volume, turnover,PRICE_RATE,SWING,VOL_RATE)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
 			#{item.stockCode,jdbcType=VARCHAR},
 			#{item.operTime,jdbcType=TIMESTAMP},
 			#{item.openPrice,jdbcType=FLOAT},
@@ -108,9 +108,27 @@
 			#{item.turnover,jdbcType=INTEGER},
 			#{item.priceRate,jdbcType=INTEGER},
 			#{item.swing,jdbcType=INTEGER},
-			#{item.volRate,jdbcType=INTEGER}
-			)
+			#{item.v20Rate,jdbcType=INTEGER}
+			from dual
 		</foreach>
 	</insert>
+	<update id="createStockDayTable"  parameterType="Map"  >
+	  create table ${tableName} as  select * from t_stock_minute  where 1=2
+	</update>
+
+
+
+	<insert id="insertStockDataAnaBatch" >
+		insert into t_stock_day_ana (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRECLOSEPRICE, PRICE_RATE, SWING, V20_RATE,
+		PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY)
+
+		<foreach collection="list" index="" item="item" separator="union all">
+		select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},#{item.macdInfo},#{item.jzTail},#{item.jzBody} from dual
+		</foreach>
+	</insert>
+
+	<select id="getMaxSeqByStockCode"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayBean">
+	  select seq,MACD_INFO  macdInfo,opertime,dif,dea  from (  select  t.* from t_stock_day_ana  t   where stockcode = #{seq}  order by t.opertime desc ) a where rownum =1
+	</select>
 
 </mapper>

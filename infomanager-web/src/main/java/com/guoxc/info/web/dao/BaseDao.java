@@ -125,8 +125,7 @@ public class BaseDao {
      * @return 列表<cls对应的类>
      */
     
-    public <T> List<T> queryForList(String sqlId, Map<String, String> params,
-                                    Class<T> cls) {
+    public List queryForList(String sqlId, Map<String, String> params) {
         return getSqlSession().selectList(sqlId, params);
     }
 
@@ -140,12 +139,12 @@ public class BaseDao {
      * @return 列表
      */
     
-    public List<Map<String, Object>> queryForList(String sqlId,
-                                                  Map<String, Object> param) {
-        List<Map<String, Object>> list = getSqlSession().selectList(sqlId, param);
-//        List<Map<String, Object>> beans = ConvertUtil.convertSqlMap2JavaMap(list);
-        return list;
-    }
+//    public List<Map<String, Object>> queryForList(String sqlId,
+//                                                  Map<String, Object> param) {
+//        List<Map<String, Object>> list = getSqlSession().selectList(sqlId, param);
+////        List<Map<String, Object>> beans = ConvertUtil.convertSqlMap2JavaMap(list);
+//        return list;
+//    }
 
     /**
      * 修改数据

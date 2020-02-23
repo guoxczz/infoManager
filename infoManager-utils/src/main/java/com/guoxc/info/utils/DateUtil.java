@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public final class DateUtil {
     private final static Logger logger = LoggerFactory.getLogger(DateUtil.class);
 
-    private final static String dateFormat = "yyyy-MM-dd";
+    public final static String dateFormat = "yyyy-MM-dd";
 
     /**
      * Private Constructor

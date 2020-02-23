@@ -1,7 +1,3 @@
-INFO  2019-04-09 20:08:00,356 [main]  - using logger: com.alibaba.dubbo.common.logger.log4j.Log4jLoggerAdapter
-ERROR 2019-04-09 20:08:04,451 [main] com.alibaba.druid.pool.DruidDataSource.validationQueryCheck(DruidDataSource.java:855) - testWhileIdle is true, validationQuery not set
-INFO  2019-04-09 20:08:04,458 [main] com.alibaba.druid.pool.DruidDataSource.init(DruidDataSource.java:715) - {dataSource-1} inited
-INFO  2019-04-09 20:08:05,068 [main] com.alibaba.druid.pool.DruidDataSource.close(DruidDataSource.java:1444) - {dataSource-1} closed
-INFO  2019-04-09 20:09:21,736 [main]  - using logger: com.alibaba.dubbo.common.logger.log4j.Log4jLoggerAdapter
-ERROR 2019-04-09 20:09:26,051 [main] com.alibaba.druid.pool.DruidDataSource.validationQueryCheck(DruidDataSource.java:855) - testWhileIdle is true, validationQuery not set
-INFO  2019-04-09 20:09:26,064 [main] com.alibaba.druid.pool.DruidDataSource.init(DruidDataSource.java:715) - {dataSource-1} inited
+INFO  2020-02-19 15:58:05,342 [main]  - using logger: com.alibaba.dubbo.common.logger.log4j.Log4jLoggerAdapter
+ERROR 2020-02-19 15:58:18,939 [main] com.alibaba.druid.pool.DruidDataSource.validationQueryCheck(DruidDataSource.java:855) - testWhileIdle is true, validationQuery not set
+INFO  2020-02-19 15:58:18,967 [main] com.alibaba.druid.pool.DruidDataSource.init(DruidDataSource.java:715) - {dataSource-1} inited

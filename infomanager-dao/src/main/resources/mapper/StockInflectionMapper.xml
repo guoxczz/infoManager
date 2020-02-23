@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.stockInflection" >
+
+	<insert id="insertStockInflection"  parameterType="com.guoxc.info.bean.info.StockDayInflectionBean" >
+		insert into T_STOCK_DAY_inflection (stock_code,oper_time, updowntype, intervalday, swingrate,
+		closeprice, precloseprice,seq)
+			select
+			#{stockCode},#{operTime},#{upDownType},#{intervalDay},#{swingRate},#{closePrice},#{preClosePrice},#{seq}
+			from dual
+	</insert>
+
+
+
+	<update id="updateStockInflection"  parameterType="com.guoxc.info.bean.info.StockDayInflectionBean" >
+		update T_STOCK_DAY_inflection t set t.oper_time= #{operTime} ,t.updowntype= #{upDownType} ,  t.closeprice= #{closePrice},t.seq= #{seq} where t.stock_code= #{stockCode} and t.intervalday=-1
+	</update>
+
+
+	<insert id="insertStockInflectionList"  parameterType="java.util.List" >
+	insert into T_STOCK_DAY_inflection (stock_code,oper_time, updowntype, intervalday, swingrate,
+		closeprice, precloseprice,seq)
+	<foreach collection="list" index="" item="item" separator="union all">
+		select
+		#{item.stockCode},#{item.operTime},#{item.upDownType},#{item.intervalDay},#{item.swingRate},#{item.closePrice},#{item.preClosePrice},#{item.seq}
+		from dual
+	</foreach>
+
+	<insert id="insertStockInflectionNewList"  parameterType="java.util.List" >
+		insert into T_STOCK_DAY_inflection_New (stock_code,oper_time, updowntype, intervalday, swingrate,
+		closeprice, precloseprice,seq)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode},#{item.operTime},#{item.upDownType},#{item.intervalDay},#{item.swingRate},#{item.closePrice},#{item.preClosePrice},#{item.seq}
+			from dual
+		</foreach>
+
+</insert>
+
+
+
+	<select id="getCurrInflectionNew"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
+	 select t.stock_code stockCode,t.oper_time operTime ,t.updowntype,t.intervalday, t.swingrate,t.closeprice,t.precloseprice, t.seq from T_STOCK_DAY_inflection_NEW t where  t.intervalday=-1
+	</select>
+
+	<select id="getCurrInflection"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
+	 select t.stock_code stockCode,t.oper_time operTime ,t.updowntype,t.intervalday, t.swingrate,t.closeprice,t.precloseprice, t.seq from T_STOCK_DAY_inflection t where t.stock_code = #{stockCode} and t.intervalday=-1
+	</select>
+
+	<select id="getInflectionNewInfo"    parameterType="Map"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
+	 select t.stock_code stockCode,t.oper_time operTime ,t.updowntype,t.intervalday, t.swingrate,t.closeprice,t.precloseprice, t.seq from T_STOCK_DAY_inflection_NEW t where t.stock_code = #{stockCode} and t.seq = #{seq}
+	</select>
+
+
+	<update id="updateStockInflectionNew"   parameterType="com.guoxc.info.bean.info.StockDayInflectionBean"   >
+		update T_STOCK_DAY_inflection t set t.oper_time= #{operTime} ,t.updowntype= #{upDownType} ,  t.intervalday= #{intervalday} ,  t.swingrate= #{swingrate},  t.closeprice= #{closePrice} where t.stock_code= #{stockCode} and t.seq= #{seq}
+	</update>
+
+</mapper>

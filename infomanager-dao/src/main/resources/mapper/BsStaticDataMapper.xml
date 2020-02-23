@@ -17,6 +17,12 @@
 	</update>
 
 
+	<insert id="insertCodeInfo"  parameterType="Map"  >
+	  insert  into BS_STATIC_DATA(code_name,code_value,state)  values (#{codeName,jdbcType=VARCHAR}, #{codeValue,jdbcType=VARCHAR},'1')
+	</insert>
+
+
+
 
 
 </mapper>
