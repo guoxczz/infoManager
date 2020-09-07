@@ -6,11 +6,13 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import javax.servlet.ServletRequestListener;
 import java.util.Properties;
 
-
+@EnableScheduling
 @EnableTransactionManagement
 @SpringBootApplication
 @MapperScan("com.guoxc.info.dao")

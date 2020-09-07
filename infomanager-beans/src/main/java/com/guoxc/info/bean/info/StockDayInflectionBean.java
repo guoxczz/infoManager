@@ -1,7 +1,7 @@
 package com.guoxc.info.bean.info;
 
 import java.sql.Timestamp;
-
+import java.util.Map;
 public class StockDayInflectionBean {
     private String stockCode;
     private Timestamp operTime;

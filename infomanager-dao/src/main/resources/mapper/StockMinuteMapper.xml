@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.StockMinute" >
+	<insert id="insertStockMinuteAnaList"  parameterType="java.util.List" >
+		insert into T_STOCK_MINUTE_ANA (stockCode,operTime,timeSeq, openprice, highprice, lowprice,
+		closeprice, volume,PRICE_RATE,SWING,bigVolS,bigVolB,flowVolS,flowVolB,norVolS,norVolB,period,maxUpDown)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.timeSeq,jdbcType=INTEGER},
+			#{item.openPrice,jdbcType=FLOAT},
+			#{item.highPrice,jdbcType=FLOAT},
+			#{item.lowPrice,jdbcType=FLOAT},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.priceRate,jdbcType=INTEGER},
+			#{item.swing,jdbcType=INTEGER},
+			#{item.bigVolS,jdbcType=INTEGER},
+			#{item.bigVolB,jdbcType=INTEGER},
+			#{item.flowVolS,jdbcType=INTEGER},
+			#{item.flowVolB,jdbcType=INTEGER},
+			#{item.norVolS,jdbcType=INTEGER},
+			#{item.norVolB,jdbcType=INTEGER},
+			#{item.period,jdbcType=INTEGER},
+			#{item.maxUpDown,jdbcType=INTEGER}
+			from dual
+		</foreach>
+	</insert>
+
+
+	<insert id="insertStockMinuteDetList"  parameterType="java.util.List" >
+		insert into T_STOCK_MIN_DET (stockCode,operTime, price, VOL, SELLTYPE,DIF,SWING)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.macdInfo,jdbcType=VARCHAR},
+			#{item.dif,jdbcType=FLOAT},
+			#{item.swing,jdbcType=INTEGER}
+			from dual
+		</foreach>
+	</insert>
+
+	<insert id="insertStockTmpMinuteDetList"  parameterType="java.util.List" >
+		insert into T_STOCK_TMP_MINUTE (stockCode,operTime, price, VOL, SELLTYPE,DIF,SWING)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.macdInfo,jdbcType=VARCHAR},
+			#{item.dif,jdbcType=FLOAT},
+			#{item.swing,jdbcType=INTEGER}
+			from dual
+		</foreach>
+	</insert>
+</mapper>

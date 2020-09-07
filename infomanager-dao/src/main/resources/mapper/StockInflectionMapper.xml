@@ -22,12 +22,12 @@
 	<insert id="insertStockInflectionList"  parameterType="java.util.List" >
 	insert into T_STOCK_DAY_inflection (stock_code,oper_time, updowntype, intervalday, swingrate,
 		closeprice, precloseprice,seq)
-	<foreach collection="list" index="" item="item" separator="union all">
+	  <foreach collection="list" index="" item="item" separator="union all">
 		select
 		#{item.stockCode},#{item.operTime},#{item.upDownType},#{item.intervalDay},#{item.swingRate},#{item.closePrice},#{item.preClosePrice},#{item.seq}
 		from dual
-	</foreach>
-
+	  </foreach>
+	</insert>
 	<insert id="insertStockInflectionNewList"  parameterType="java.util.List" >
 		insert into T_STOCK_DAY_inflection_New (stock_code,oper_time, updowntype, intervalday, swingrate,
 		closeprice, precloseprice,seq)
@@ -42,7 +42,7 @@
 
 
 	<select id="getCurrInflectionNew"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
-	 select t.stock_code stockCode,t.oper_time operTime ,t.updowntype,t.intervalday, t.swingrate,t.closeprice,t.precloseprice, t.seq from T_STOCK_DAY_inflection_NEW t where  t.intervalday=-1
+	 select t.stock_code stockCode,t.oper_time operTime ,t.updowntype,t.intervalday, t.swingrate,t.closeprice,t.precloseprice, t.seq from T_STOCK_DAY_inflection_NEW t where  t.seq=9999
 	</select>
 
 	<select id="getCurrInflection"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
@@ -54,8 +54,46 @@
 	</select>
 
 
+	<select id="getInflectionNewInfoByOrder"    parameterType="Map"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
+	 select t.stock_code stockCode,t.oper_time operTime ,t.updowntype,t.intervalday, t.swingrate,t.closeprice,t.precloseprice, t.seq from T_STOCK_DAY_inflection_NEW t where t.stock_code = #{stockCode} order by t.oper_time
+	</select>
+
 	<update id="updateStockInflectionNew"   parameterType="com.guoxc.info.bean.info.StockDayInflectionBean"   >
-		update T_STOCK_DAY_inflection t set t.oper_time= #{operTime} ,t.updowntype= #{upDownType} ,  t.intervalday= #{intervalday} ,  t.swingrate= #{swingrate},  t.closeprice= #{closePrice} where t.stock_code= #{stockCode} and t.seq= #{seq}
+		update T_STOCK_DAY_inflection_NEW t set t.oper_time= #{operTime} ,t.updowntype= #{upDownType} ,  t.intervalday= #{intervalDay} ,  t.swingrate= #{swingRate},  t.closeprice= #{closePrice} where t.stock_code= #{stockCode} and t.seq= #{seq}
 	</update>
+
+    <select id="getRecentInflectionNewInfo"    parameterType="Map"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
+        SELECT stock_code stockCode,oper_time operTime ,updowntype,intervalday, swingrate,closeprice FROM (
+        SELECT ROW_NUMBER() OVER(PARTITION BY t.stock_code ORDER BY t.seq DESC) rn,
+        t.*  FROM t_stock_day_inflection_new t ) WHERE rn  &lt;  7 order by stock_code,rn
+    </select>
+
+
+
+
+	<select id="queryRecentStockInflection"    parameterType="Map"  resultType="com.guoxc.info.bean.info.StockDayInflectionBean">
+		SELECT stock_code stockCode,oper_time operTime ,updowntype,intervalday, swingrate,closeprice,precloseprice, seq FROM (
+		SELECT ROW_NUMBER() OVER(PARTITION BY t.stock_code ORDER BY t.seq DESC) rn,
+		t.*  FROM t_stock_day_inflection_new t  where t.stock_code = #{stockCode}  and  t.oper_time  <![CDATA[<=]]> #{operTime  ) WHERE rn  <![CDATA[ < ]]>  8 order by stock_code,rn
+
+	</select>
+
+
+    <update id="truncateTable" parameterType="string" >
+        truncate table T_STOCK_DAY_INFLECTION_RECENT
+    </update>
+
+    <insert id="insertStockInflectionRecentList"  parameterType="java.util.List" >
+        insert into T_STOCK_DAY_INFLECTION_RECENT (STOCK_CODE,LAST_TIME, R1_UPDOWNTYPE, R1_INTERVALDAY, R1_SWINGRATE,R1_CLOSEPRICE,
+        R2_UPDOWNTYPE, R2_INTERVALDAY, R2_SWINGRATE,R2_CLOSEPRICE,R3_INTERVALDAY, R3_SWINGRATE,R4_INTERVALDAY, R4_SWINGRATE,R5_INTERVALDAY, R5_SWINGRATE,R6_INTERVALDAY, R6_SWINGRATE,R3_CLOSEPRICE,R4_CLOSEPRICE,R5_CLOSEPRICE,R6_CLOSEPRICE)
+        <foreach collection="list" index="" item="item" separator="union all">
+            select
+            #{item.stockCode},#{item.lastTime},#{item.r1UpdDownType},#{item.r1IntervalDay},#{item.r1SwingRate},#{item.r1ClosePrice},#{item.r2UpdDownType},#{item.r2IntervalDay},#{item.r2SwingRate},#{item.r2ClosePrice},
+            #{item.r3IntervalDay},#{item.r3SwingRate},#{item.r4IntervalDay},#{item.r4SwingRate},#{item.r5IntervalDay},#{item.r5SwingRate},#{item.r6IntervalDay},#{item.r6SwingRate},#{item.r3ClosePrice},#{item.r4ClosePrice},#{item.r5ClosePrice},#{item.r6ClosePrice}
+            from dual
+        </foreach>
+
+    </insert>
+
 
 </mapper>

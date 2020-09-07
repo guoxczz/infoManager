@@ -7,7 +7,10 @@
   </parent>
   <artifactId>infoManager-utils</artifactId>
 
+
+
   <dependencies>
+
   <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>slf4j-api</artifactId>

@@ -12,25 +12,26 @@ import com.guoxc.info.utils.FileUtil;
 import com.guoxc.info.utils.StringUtil;
 import com.guoxc.info.web.common.ConstantsInfo;
 import com.guoxc.info.web.control.StockControl;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
 import com.guoxc.info.web.dao.BaseDao;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.sql.Timestamp;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
-public class StockService {
+public class StockPredictService {
     private final static Logger logger = LoggerFactory.getLogger(StockControl.class);
     @Autowired
     private StockDao stockDao  ;
@@ -44,586 +45,166 @@ public class StockService {
     @Autowired
     private BaseDao baseDao;
 
+    private int UPDAY = 10;
 
-    @Autowired
-    private SqlSession sqlSession;
+    /**
+     * 价格低位买入点： 1、 横盘后 下跌： 横盘后  下跌15%，   成交量变小。 （价格历史最低点， 60日最低点）     卖出点： 横盘价格抛50%，横盘价格上涨10% 后抛50%, 达到横盘价格附近后，下跌10，继续买进。
+     *                 2、 横盘持续50天后  上涨，涨幅比较大，8%以上。次日开盘价低于2% 买入（ 实际买入参考，无此数据 开盘成交量低于20日均线的3%）
+     *  价格中位       1、  震动缩量下跌： 成交量处于60日最小量附近，价格处于震荡范围低位。买入，  成交量放大时，上涨则卖出一部分，下跌则次日加仓。
+     *
+     * 价格高位        1、 首次大幅上涨后，回调到开始大幅上涨（超过4%）的价格时，开始买入。
+     *
+     *
+     *
+     * 低位： 横盘、震荡、波动
+     * 中位：
+     * 高位：
+     *
+     *
+     * @param stockCode
+     * @param date
+     * @throws ParseException
+     */
+
+
+    public void  predict(String stockCode,String date) throws ParseException {
+
+
+         Map param = new HashMap();
+
+         if(StringUtils.isBlank(date)){
+            date = DateUtil.getCurrDate("yyyy-MM-dd");
+         }
+        param.put("operTime",DateUtil.convertStringToTimestamp(date,"yyyy-MM-dd") );
+        param.put("stockCode",stockCode);
+
+        Map stockHisMap = new HashMap();
+
+      List stockDayList =   baseDao.queryForList("com.guoxc.info.dao.StockDao.selectStockDay",param);
+        StockSwingBean stockSwingBean = (StockSwingBean) baseDao.selectOne("com.guoxc.info.dao.StockSwingDao.getStockStatByStockCode",param);
+        float  maxPrice =  stockSwingBean.getMaxPrice();
+        float  minPrice =  stockSwingBean.getMaxPrice();
+        long  minVol =  stockSwingBean.getMinVol();
+        for(int i=0; i<stockDayList.size();i++ ){
+            StockDayBean stockDayBean = (StockDayBean) stockDayList.get(i);
+             float closePrice =  stockDayBean.getClosePrice();
+            float minC60Price = stockDayBean.getMinC60Price();
+            float maxC60Price = stockDayBean.getMaxC60Price();
+            float diffPriceRate =  (closePrice-minC60Price)*100/minC60Price;
+            float bigDiffPriceRate =  (closePrice-minPrice)*100/minPrice;
+            saveHengPan(stockDayBean,stockHisMap);
+            if(diffPriceRate<15 && bigDiffPriceRate<50 ){ // 低位。
+
+
+            }
+
+
+        }
 
 
 
-    public void query(){
+        getUpdayAndNormalVolList(stockDayList);
 
-         Map param = new HashMap<String,String>();
-        param.put("codeName","STOCK_MINUTE_DEAL_TIME_601181");
 
-        Object object1 =   sqlSession.selectOne("com.guoxc.info.dao.BsStaticDataDao.getCodeValue","STOCK_MINUTE_DEAL_TIME_601181");
 
-        Object object = baseDao.queryForObject("com.guoxc.info.dao.BsStaticDataDao.getCodeValue",param);
-
-        logger.error(JSON.toJSONString(object));
 
 
     }
 
-
-
-    public Map queryCurrStockDayInflection(){
-        Map result = new HashMap();
-       List  currStockDayInflectionList =  baseDao.queryForList("com.guoxc.info.dao.stockInflection.getCurrInflectionNew",null);
-       if(currStockDayInflectionList != null){
-           for(int i=0; i<currStockDayInflectionList.size();i++){
-               StockDayInflectionBean  tmpStockDayInflectionBean = (StockDayInflectionBean) currStockDayInflectionList.get(i);
-               result.put(tmpStockDayInflectionBean.getStockCode(),tmpStockDayInflectionBean);
-           }
-       }
-      return result;
-    }
-
-
-
-
-    public String updateStockInfo(){
-
-        try {
-            File[] files = new File("E:\\stock\\data\\stockInfo").listFiles();
-            for(File file : files){
-                String fileName = file.getName();
-                if(fileName.startsWith("沪深Ａ股")){
-                    updateStockFinanceInfo(file);
-                  boolean bool =  file.renameTo(new File(file.getParent()+"/bak/"+file.getName()));
-                }else{
-                    if(fileName.indexOf("202")>0){//2020年的前三位
-                        updateStockHangyeInfo(file);
-                        file.renameTo(new File(file.getParent()+"/bak/"+file.getName()));
-                    }
-                }
-            }
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "success";
-    }
-// 更新财务数据
-    private  void updateStockFinanceInfo(File file) throws ParseException {
-
-       List StockBeanList =  baseDao.queryForList("com.guoxc.info.dao.StockDao.selectStockInfo",null);
-       Map paramMap = new HashMap();
-       if(StockBeanList.size()>0){
-           for(int i=0;i<StockBeanList.size();i++){
-               StockBean bean =  (StockBean) StockBeanList.get(i);
-               paramMap.put(bean.getStockCode(),bean);
-           }
-       }
-       List updateList = new  ArrayList();
-        List insertList = new  ArrayList();
-
-        paramMap.put("updateList",updateList);
-        paramMap.put("insertList",insertList);
-        List  list = FileUtil.readFileXml(file,"gbk");
-        String line = (String) list.get(0);
-        Map<String,Integer> keyOffsetMap =  getStockKeyOffsetMap(line);
-        for(int i=1;i<list.size()-1;i++){ //除去最后一行
-            line  = (String) list.get(i);
-            try{
-                getStockKeyOffsetMap(line,keyOffsetMap,paramMap);
-            }catch(Exception e){
-                logger.error(i+"line",e);
-            }
-
-        }
-        if(insertList.size()>0){
-            baseDao.insert("com.guoxc.info.dao.StockDao.insertStockInfoList",insertList);
-        }
-        if(updateList.size()>0){
-            for(int i=0; i<updateList.size();i++){
-                StockBean bean =  (StockBean)updateList.get(i);
-                baseDao.update("com.guoxc.info.dao.StockDao.updateStockInfo",bean);
-            }
-        }
-
-    }
-
-
-    // 更新概念分类（行业分类2）
-    private  void updateStockHangyeInfo(File file) throws ParseException {
-
-        String fileName = file.getName();
-        String hangye = fileName.substring(0,fileName.indexOf("202"));//2020年的前三位
-        Map paramMap = new HashMap();
-        List updateList = new  ArrayList();;
-        List  list = FileUtil.readFileXml(file,"gbk");
-        String line = (String) list.get(0);
-        for(int i=1;i<list.size()-1;i++){ //除去最后一行
-            line  = (String) list.get(i);
-            String[] cols = line.split("\t");
-            paramMap.put("hangye2",hangye+",");
-            paramMap.put("stockCode",cols[0]);
-            baseDao.update("com.guoxc.info.dao.StockDao.updateStockInfoHangye2",paramMap);
-        }
-
-
-    }
-
-
-
-    private void getStockKeyOffsetMap(String line,  Map<String,Integer> offsetMap, Map stockInfoMap) throws ParseException {
-
-
-        // 标题  日期	    开盘	    最高	    最低	    收盘	    成交量	    成交额
-        String[] cols = line.split("\t");
-        StockBean bean = null ;
-        if(offsetMap.get("stockCode")!= null){
-
-           String stockCode =  cols[offsetMap.get("stockCode")];
-            bean = (StockBean) stockInfoMap.get(stockCode);
-            if(bean == null){
-                bean = new StockBean();
-               List insertList =  (List) stockInfoMap.get("insertList");
-                insertList.add(bean);
-                bean.setHangye2(",");
-                bean.setStockCode(stockCode);
-            }else{
-                List updateList =  (List) stockInfoMap.get("updateList");
-                updateList.add(bean);
-            }
-        }else{
-
-        }
-        if(offsetMap.get("stockName")!= null){
-            bean.setStockName(cols[offsetMap.get("stockName")]);
-        }
-        if(offsetMap.get("hangye")!= null){
-
-            bean.setHangYe(cols[offsetMap.get("hangye")]);
-        }
-        if(offsetMap.get("prov")!= null){
-            bean.setProv(cols[offsetMap.get("prov")]);
-        }
-        if(offsetMap.get("zgb")!= null){
-            String  zgb =  cols[offsetMap.get("zgb")];
-            if(!"--".equals(zgb.trim())){
-                bean.setZgb(Float.valueOf(zgb));
-            }
-        }
-        if(offsetMap.get("ltgb")!= null){
-            String  ltgb = cols[offsetMap.get("ltgb")];
-            if(!"--".equals(ltgb.trim())){
-                bean.setLtgb(Float.valueOf(ltgb));
-            }
-        }
-        if(offsetMap.get("priceRate3D")!= null){
-            String priceRate3D = cols[offsetMap.get("priceRate3D")];
-            if(!"--".equals(priceRate3D.trim())){
-                bean.setPriceRate3D(Float.valueOf(priceRate3D));
-            }
-        }
-        if(offsetMap.get("priceRate20D")!= null){
-            String priceRate20D = cols[offsetMap.get("priceRate20D")];
-            if(!"--".equals(priceRate20D.trim())){
-                bean.setPriceRate20D(Float.valueOf(priceRate20D));
-            }
-        }
-        if(offsetMap.get("priceRate60D")!= null){
-            String priceRate60D = cols[offsetMap.get("priceRate60D")];
-            if(!"--".equals(priceRate60D.trim())){
-                bean.setPriceRate60D(Float.valueOf(priceRate60D));
-            }
-        }
-        if(offsetMap.get("recentTips")!= null){
-            bean.setRecentTips(cols[offsetMap.get("recentTips")]);
-        }
-        if(offsetMap.get("financeUpdateDay")!= null){
-            bean.setFinanceUpdateDay(DateUtil.getTimestamp(cols[offsetMap.get("financeUpdateDay")],"yyyyMMdd"));
-        }
-        if(offsetMap.get("onMarketDay")!= null){
-            String onMarketDay = cols[offsetMap.get("onMarketDay")];
-            if(!"--".equals(onMarketDay.trim())){
-                bean.setOnMarketDay(DateUtil.getTimestamp(onMarketDay,"yyyyMMdd"));
-            }
-
-        }
-        if(offsetMap.get("debtRatio")!= null){
-            bean.setDebtRatio(Float.valueOf(cols[offsetMap.get("debtRatio")]));
-        }
-        if(offsetMap.get("netProfitRate")!= null){
-
-           String netProfitRate =   cols[offsetMap.get("netProfitRate")];
-            netProfitRate= netProfitRate.replace("㈢","").replace("㈣","").replace("㈡","").replace("㈠","");
-            if(!"--".equals(netProfitRate.trim())){
-                bean.setNetProfitRate(Float.valueOf(netProfitRate));
-            }
-
-        }
-        if(offsetMap.get("profitRateBefore")!= null){
-                bean.setProfitRateBefore(Float.valueOf(cols[offsetMap.get("profitRateBefore")]));
-
-
-        }
-        if(offsetMap.get("stockerNum")!= null){
-            Float stockerNum = Float.valueOf(cols[offsetMap.get("stockerNum")]);
-
-            if(StringUtils.isBlank(bean.getStockerNum()) ){//为空代表第一次
-                bean.setStockerNum("，"+cols[offsetMap.get("stockerNum")]+ ",");
-            }else if(!bean.getStockerNum().endsWith("，"+cols[offsetMap.get("stockerNum")]+ ",")){
-                //和上一次人数不一样，代表有变动，更新
-                String [] stokcerNum =bean.getStockerNum().split(",");
-                bean.setStockerNum(bean.getStockerNum()+cols[offsetMap.get("stockerNum")]+ ",");
-//                bean.setStockerNumRate( Long.valueOf(cols[offsetMap.get("stockerNum")])*100/Long.valueOf(stokcerNum[stokcerNum.length-1]));
-            }
-        }
-    }
-
-
-    private Map<String,Integer> getStockKeyOffsetMap(String line){
-        // 标题  日期	    开盘	    最高	    最低	    收盘	    成交量	    成交额
-        String[] cols = line.split("\t");
-        Map<String , Integer> offsetMap = new HashMap();
-        for(int i=0 ;i <cols.length;i++){
-            if("代码".endsWith(cols[i])){
-                offsetMap.put("stockCode",i);
-            }else if("名称".endsWith(cols[i])){
-                offsetMap.put("stockName",i);
-            } else if("细分行业".endsWith(cols[i])){
-                offsetMap.put("hangye",i);
-            }else if("地区".endsWith(cols[i])){
-                offsetMap.put("prov",i);
-            }else if("流通股(亿)".endsWith(cols[i])){
-                offsetMap.put("ltgb",i);
-            }else if("3日涨幅%".endsWith(cols[i])){
-                offsetMap.put("priceRate3D",i);
-            }else if("20日涨幅%".endsWith(cols[i])){
-                offsetMap.put("priceRate20D",i);
-            } else if("60日涨幅%".endsWith(cols[i])){
-                offsetMap.put("priceRate60D",i);
-            } else if("近日指标提示".endsWith(cols[i])){
-                offsetMap.put("recentTips",i);
-            }else if("财务更新".endsWith(cols[i])){
-                offsetMap.put("financeUpdateDay",i);
-            }else if("上市日期".endsWith(cols[i])){
-                offsetMap.put("onMarketDay",i);
-            }else if("资产负债率%".endsWith(cols[i])){
-                offsetMap.put("debtRatio" ,i);
-            }else if("净益率%".endsWith(cols[i])){
-                offsetMap.put("netProfitRate"  ,i);
-            }else if("股东人数".endsWith(cols[i])){
-                offsetMap.put("stockerNum" ,i);
-            }else if("利润同比%".endsWith(cols[i])){
-                offsetMap.put("profitRateBefore" ,i);
-            }
-
-        }
-        return offsetMap;
-    }
-
-
-
-    public String saveStockMinuteDataByStockCode(String stockCode){
-
-        String last6StockCode =stockCode.substring(2);
-        String dealZSDataTimeKey = "STOCK_MINUTE_DEAL_TIME_"+last6StockCode;
-        String lastDealDayStr =  (String) baseDao.selectOne(ConstantsInfo.SQLID.GET_CODEVALUE ,dealZSDataTimeKey) ;
-        boolean exist = true;
-        if(lastDealDayStr == null){
-            lastDealDayStr ="2020-1-1";
-            exist= false;
-            createStockDayTable(stockCode);
-        }
-
-        try {
-            Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");
-            if (DateUtil.getCurrentDate().after(lastDealDay) ) {
-                File file = new File("E:\\stock\\data\\minute\\"+stockCode.substring(0,2)+"#"+stockCode.substring(2)+".txt");
-                putStockDataMinuteFile2DB(file, lastDealDay,"");
-                if(exist){
-                    bsStaticDataService.updateDealTime(dealZSDataTimeKey);
-                }else{
-                    bsStaticDataService.insertCodeInfo(dealZSDataTimeKey,DateUtil.getCurrentDateString(DateUtil.DATE_PATTERN.YYYY_MM_DD));
-                }
-
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        logger.info("deal_voer:"+stockCode);
-        return "success";
-    }
-
-
-    public String saveStockTmpDay(File  file){
-        List  list = FileUtil.readFileXml(file,"gbk");
-        List tmpList = new ArrayList();
-
-        baseDao.update("com.guoxc.info.dao.StockDao.clearStockTmpDay",null);
-        for(int i=1;i<list.size()-1;i++){
-            String line = (String)list.get(i);
-            String[] cols = line.split("\t");
-
-            try{
-
-                StockDayBean bean = new  StockDayBean();
-
-                bean.setStockCode(cols[0]);
-                bean.setStockName(cols[1]);
-                if(line.startsWith("000029")){
-                    logger.error(line);
-                }
-
-                 if("--".equals(cols[2].trim())){
-                     continue;
-                 }
-
-                bean.setLowPrice(Float.parseFloat(cols[2]));//涨幅
-                bean.setClosePrice(Float.parseFloat(cols[3]));//当前价格
-                bean.setHighPrice( Float.parseFloat(cols[7]));  //量比
-                tmpList.add(bean);
-            }catch (Exception e){
-
-                logger.error("error line="+line,e);
-            }
-
-        }
-
-        baseDao.insert("com.guoxc.info.dao.StockDao.insertStockTmpDayList",tmpList);
-        return "success";
-    }
-
-
-
-
-    private void  createStockDayTable(String stockCode){
-
+    private void getStockRecentInfo(String stockCode){
         Map param = new HashMap();
-        param.put("tableName","t_st_min_"+stockCode.substring(2));
-        baseDao.update("com.guoxc.info.dao.StockDao.createStockDayTable",param);
+        param.put("stockCode",stockCode);
+        List stockInflectionList =   baseDao.queryForList("com.guoxc.info.dao.stockInflection.getInflectionNewInfoByOrder",param);
+       for(int i=0;i<stockInflectionList.size();i++){
+
+       }
+
+
 
     }
 
+    private Float getMax(Float f1,Float f2){
+        return f1> f2? f1:f2;
+    }
+    private Float getMin(Float f1,Float f2){
+        return f1> f2? f2:f1;
+    }
 
-    public String putRecentData2StockData() {
-
-        String dealZSDataTimeKey = "STOCK_DEAL_TIME_STOCK_DAY";
-        StockDayBean bean = new StockDayBean();
-        String lastDealDayStr =  (String) baseDao.selectOne(ConstantsInfo.SQLID.GET_CODEVALUE ,dealZSDataTimeKey) ;
-        if (lastDealDayStr != null) {
-            try {
-                Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");
-                if (lastDealDay.before(DateUtil.getCurrentDate())) {
-
-                    File[] files = new File("E:\\stock\\data\\dayadd\\").listFiles();
-                    for (File file : files) {
-                        putStockZSDataFile2DDB(file, lastDealDay,"");
-                    }
-                    bsStaticDataService.updateDealTime(dealZSDataTimeKey);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+    private void saveHengPan(StockDayBean stockDayBean,Map stockHisMap){
+        int price20Rate =   Math.round( (stockDayBean.getMaxC20Price()-stockDayBean.getMinC20Price())/stockDayBean.getMaxC20Price() );
+        if(price20Rate<0.12){ //代表横盘
+            if(stockHisMap.get("h_seq")==null){
+                stockHisMap.put("h_seq",stockDayBean.getSeq());
+                stockHisMap.put("h_eseq",stockDayBean.getSeq()-20);
+                stockHisMap.put("h_maxprice",stockDayBean.getMaxC20Price());
+                stockHisMap.put("h_minPrice",stockDayBean.getMinC20Price());
+            }else{
+                stockHisMap.put("h_eseq",(Long)stockHisMap.get("h_eseq") +1);
+                stockHisMap.put("h_maxprice",getMax(stockDayBean.getClosePrice() , (float) stockHisMap.get("h_maxprice")));
+                stockHisMap.put("h_minPrice",getMin(stockDayBean.getClosePrice() , (float) stockHisMap.get("h_minPrice")));
             }
         }
-        //603682 sz002951 002952 002958
-        return "success";
     }
 
 
-
-
-    public String putRecentData2StockDataAnaly(File file) {
-
-        String dealZSDataTimeKey = "STOCK_DEAL_TIME_STOCK_DAY_ANA";
-        StockDayBean bean = new StockDayBean();
-        String lastDealDayStr =  (String) baseDao.selectOne(ConstantsInfo.SQLID.GET_CODEVALUE ,dealZSDataTimeKey) ;
-        if (lastDealDayStr != null) {
-            try {
-                Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");
-                if (lastDealDay.before(DateUtil.getCurrentDate())) {
-
-//                    File[] files = new File("E:\\stock\\data\\dayadd\\").listFiles();
-////                    for (File file : files) {
-////                        putStockZSDataFile2DBAnaly(file, lastDealDay,"");
-////                    }
-                    putStockZSDataFile2DBAnaly(file, lastDealDay,"");
-                    bsStaticDataService.updateDealTime(dealZSDataTimeKey);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+    private  List getUpdayAndNormalVolList(List stockDayList){
+        List result = new ArrayList();
+        int count =0;
+        long priceRate = 0;
+        for(int i=0;i<stockDayList.size();i++){
+            StockDayBean bean = (StockDayBean) stockDayList.get(i);
+            //量比20日均量 小10% 且价格下降2%
+            if(bean.getV20Rate()<-30 && bean.getPriceRate()<-20 && bean.getHighPrice()>bean.getLowPrice() && bean.getClosePrice()>4){
+                priceRate = priceRate+bean.getPriceRate();
+                count++;
+            }else{
+                priceRate =0;
+                count = 0;
+            }
+            //联系
+            if(count == 3){
+                bean.setSmallInP(priceRate);
+                result.add(bean);
+                priceRate =0;
+                count = 0;
             }
         }
-        //603682 sz002951 002952 002958
-        return "success";
-    }
 
-
-
-    public String saveRecentZSData2StockData() {
-
-        String filePath = "E:\\stock\\data\\zhishu\\SH#999999.txt";
-        String dealZSDataTimeKey = "STOCK_DEAL_TIME_STOCK_DAY_ZS";
-        String lastDealDayStr =  (String) baseDao.selectOne(ConstantsInfo.SQLID.GET_CODEVALUE ,dealZSDataTimeKey) ;
-//        bsStaticDataDao.getCodeValue(dealZSDataTimeKey);
-        if(StringUtil.isBlank(lastDealDayStr) ){
-            lastDealDayStr = "2018-8-1";
+        if(result.size()>0){
+            baseDao.insert("com.guoxc.info.dao.StockDao.insertStockPredictBatch",result);
         }
-
-            try {
-                Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");
-                if (lastDealDay.before(DateUtil.getCurrentDate())) {
-                    File file = new File(filePath);
-                    if(file.exists()){
-
-                        putStockZSDataFile2DDB(file, lastDealDay,"ZS");
-
-                        bsStaticDataService.updateDealTime(dealZSDataTimeKey);
-                    }
-                    }else{
-                        logger.error(filePath+" 不存在");
-                    }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        //603682 sz002951 002952 002958
-        return "success";
-    }
-
-
-    public String saveStockZSMinuteData() {
-        String result = "error";
-        String filePath = "E:\\stock\\data\\zhushu_minute\\SH#999999.txt";
-        String dealZSDataMinuteDealTimeKey = "STOCK_DEAL_TIME_STOCK_MINUTE_ZS";
-        String lastDealDayStr =  (String) baseDao.selectOne(ConstantsInfo.SQLID.GET_CODEVALUE ,dealZSDataMinuteDealTimeKey) ;
-
-        if (lastDealDayStr != null) {
-            try {
-                Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");
-                if (lastDealDay.before(DateUtil.getCurrentDate())) {
-                    File file = new File(filePath);
-                    if(file.exists()){
-                        putStockDataMinuteFile2DB(file, lastDealDay,"ZS");
-
-                        bsStaticDataService.updateDealTime(dealZSDataMinuteDealTimeKey);
-                        result= "success";
-                    }else{
-                        logger.error(filePath+" 不存在");
-                        result = "error";
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        //603682 sz002951 002952 002958
         return result;
+
     }
 
 
-//usegetana
-    public void  putStockZSDataFile2DBAnaly(File file,Timestamp lastDealDay,String type) {
-        try{
-//            Timestamp beginTime = DateUtil.addMonth(lastDealDay,3);
-            List stockList = new ArrayList();
-            List stockSwingList = new ArrayList();
-            //file 示例 SH#600000.txt
-            String sqlId = null;
-            sqlId = "com.guoxc.info.dao.StockDao.insertStockDataAnaBatch" ;
-            long currTime = System.currentTimeMillis();
-            String fileName = file.getName();
-            String stockCode = fileName.substring(3,9);
-            List  list = FileUtil.readFileXml(file,"gbk");
-            Map hisVolAndClosePrice = new HashMap();
-            List <Float>hisVolList = new ArrayList();
-            List<Float> hisClosePriceList = new ArrayList();
-            logger.info("*****"+stockCode+" readFile cost "+ ( System.currentTimeMillis()-currTime));
-            currTime=System.currentTimeMillis();
-            hisVolAndClosePrice.put("hisVolList",hisVolList);
-            hisVolAndClosePrice.put("hisClosePriceList",hisClosePriceList);
 
 
-            String getMaxSeqSql= "com.guoxc.info.dao.StockDao.getMaxSeqByStockCode";
-            StockDayBean lastStockDayean  = null ;
-//                     lastStockDayean  =  (StockDayBean) baseDao.selectOne(getMaxSeqSql ,stockCode) ;
-            hisVolAndClosePrice.put("lastInfo",lastStockDayean);
 
-            String getLastStockSwingSql= "com.guoxc.info.dao.StockSwingDao.getLastStockSwingByStockCode";
-            StockSwingBean lastStockSwingean = null;
-//                     lastStockSwingean =  (StockSwingBean) baseDao.selectOne(getLastStockSwingSql ,stockCode) ;
-
-            hisVolAndClosePrice.put("lastStockSwingInfo",lastStockSwingean);
+    private void predict( StockDayBean bean,  List stockInflectionList ){
+        Timestamp operTime = bean.getOperTime();
+        List recentStockInflectionList = getRecentStockInflection(stockInflectionList, operTime);
 
 
-            String getCurrInflectionSql= "com.guoxc.info.dao.stockInflection.getCurrInflection";
-            StockDayInflectionBean stockDayInflection = null;
-//            StockDayInflectionBean stockDayInflection =  (StockDayInflectionBean) baseDao.selectOne(getCurrInflectionSql ,stockCode) ;
-            hisVolAndClosePrice.put("currStockDayInflection",stockDayInflection);
-            logger.info("*****"+stockCode+" readDBinfo cost "+ ( System.currentTimeMillis()-currTime));
-            currTime=System.currentTimeMillis();
-            for(int i=2; i<list.size();i++){
-                String line = (String) list.get(i);
-                if(line.contains("日期")){
-                    continue; //标题跳过.
-                }
-                // 标题  日期	    开盘	    最高	    最低	    收盘	    成交量	    成交额
-                //2010/01/04	6.69	6.70	6.41	6.42	66191338	1419984128.00
 
-                String[] cols = line.split("\t");
-                if(cols.length>=7){
-                    if(DateUtil.convertStringToTimestamp(cols[0],"yyyy/MM/dd").after(lastDealDay)){
-                        StockDayBean bean =  getStockBeanForDayFromLine(hisVolAndClosePrice,list,i,stockCode);
-                        bean.setStockCode(stockCode);
-                        if(bean.getVolume()!=0){
-                            stockList.add(bean);
-                            if(bean.getSeq()>60){
-                                setRecentSwingInfo(bean,stockSwingList,hisVolAndClosePrice);
-                            }
-                        }
-                    }
-                }
-            }
 
-            logger.info("*****"+stockCode+" deal data cost "+ ( System.currentTimeMillis()-currTime));
-            currTime=System.currentTimeMillis();
-            logger.info(stockCode+"stockList size="+stockList.size());
-            if(stockList.size()>0){
-//                stockDao.insertStockDayZSList(stockList);
-                baseDao.insert(sqlId,stockList);
-            }
-            logger.info("*****"+stockCode+" save DBdata1 cost "+ ( System.currentTimeMillis()-currTime));
-            currTime=System.currentTimeMillis();
-// save stockSwing
-//            if(stockSwingList.size()>0){
-//                  if(lastStockSwingean != null ){
-//                      StockSwingBean tmpStockSwingean  =  (StockSwingBean) stockSwingList.get(0);
-//                       if(tmpStockSwingean.getSwingSeq() ==  lastStockSwingean.getSwingSeq()  ){
-//                           stockSwingList.remove(0);
-//                           baseDao.update("com.guoxc.info.dao.StockSwingDao.updateStockSwing",tmpStockSwingean);
-//                       }
-//                  }
-//                  if(stockSwingList.size()>0){
-//                      baseDao.insert("com.guoxc.info.dao.StockSwingDao.insertStockSwingList",stockSwingList);
-//                  }
-//            }
-//
-//            logger.info("*****"+stockCode+" save DBdata2 cost "+ ( System.currentTimeMillis()-currTime));
-//            currTime=System.currentTimeMillis();
-//            // save stockDayInflection
-//            if(stockDayInflection ==null){
-//                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
-//                if(tmpStockDayCurrInflection != null){
-//                    baseDao.insert("com.guoxc.info.dao.stockInflection.insertStockInflection",tmpStockDayCurrInflection);
-//                }
-//            }else{
-//                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
-//               if( tmpStockDayCurrInflection!= null && stockDayInflection.getSeq()<tmpStockDayCurrInflection.getSeq()){
-//                   baseDao.insert("com.guoxc.info.dao.stockInflection.updateStockInflection",tmpStockDayCurrInflection);
-//               }
-//            }
 
-            logger.info("*****"+stockCode+" save DBdata3 cost "+ ( System.currentTimeMillis()-currTime));
 
-        }catch (Exception e){
-            logger.error("putStockDataFile2DDB_err",e);
+    }
+
+    private List getRecentStockInflection(List stockInflectionList, Timestamp operTime) {
+        List recentStockInflectionList = new ArrayList();
+        for(int i=stockInflectionList.size()-1; i>0; i--){
+          StockDayInflectionBean tmpDayInflection =  (StockDayInflectionBean)  stockInflectionList.get(i);
+          if(tmpDayInflection.getOperTime().before(operTime)){
+              if(recentStockInflectionList.size()<8){
+                  recentStockInflectionList.add(tmpDayInflection);
+              }else{
+                  break;
+              }
+          }
         }
+        return  recentStockInflectionList;
     }
 
 
@@ -631,7 +212,6 @@ public class StockService {
         try{
             Timestamp beginTime = DateUtil.addMonth(lastDealDay,3);
             List stockList = new ArrayList();
-            List stockSwingList = new ArrayList();
             //file 示例 SH#600000.txt
             String sqlId = null;
            if("ZS".equals(type)){
@@ -663,7 +243,6 @@ public class StockService {
                     if(DateUtil.convertStringToTimestamp(cols[0],"yyyy/MM/dd").after(lastDealDay)){
                         StockDayBean bean =  getStockBeanForDayFromLine(hisVolAndClosePrice,list,i, stockCode);
                         bean.setStockCode(stockCode);
-
                         stockList.add(bean);
                     }
                 }
@@ -673,7 +252,6 @@ public class StockService {
 //                stockDao.insertStockDayZSList(stockList);
                 baseDao.insert(sqlId,stockList);
             }
-
         }catch (Exception e){
             logger.error("putStockDataFile2DDB_err",e);
         }
@@ -770,37 +348,6 @@ public class StockService {
             result.setV5Avg(getlastVolAvg(hisVol,5));
             result.setV20Avg(getlastVolAvg(hisVol,20));
             result.setV60Avg(getlastVolAvg(hisVol,60));
-
-            Map <String,Float> c5MaxMinPriceMap =   getRecentMaxMinPrice(hisClosePrice,5);
-            Map <String,Float> c10MaxMinPriceMap =   getRecentMaxMinPrice(hisClosePrice,10);
-            Map <String,Float> c20MaxMinPriceMap =   getRecentMaxMinPrice(hisClosePrice,20);
-            Map <String,Float> c60MaxMinPriceMap =   getRecentMaxMinPrice(hisClosePrice,60);
-            result.setMaxC5Price(c5MaxMinPriceMap.get("maxPrice"));
-            result.setMinC5Price(c5MaxMinPriceMap.get("minPrice"));
-            result.setMaxC10Price(c10MaxMinPriceMap.get("maxPrice"));
-            result.setMinC10Price(c10MaxMinPriceMap.get("minPrice"));
-            result.setMaxC20Price(c20MaxMinPriceMap.get("maxPrice"));
-            result.setMinC20Price(c20MaxMinPriceMap.get("minPrice"));
-            result.setMaxC60Price(c60MaxMinPriceMap.get("maxPrice"));
-            result.setMinC60Price(c60MaxMinPriceMap.get("minPrice"));
-
-
-            Map <String,Long> c5MaxMinVolMap =   getRecentMaxMinVol(hisVol,5);
-            Map <String,Long> c10MaxMinVolMap =   getRecentMaxMinVol(hisVol,10);
-            Map <String,Long> c20MaxMinVolMap =   getRecentMaxMinVol(hisVol,20);
-            Map <String,Long> c60MaxMinVolMap =   getRecentMaxMinVol(hisVol,60);
-            result.setMaxV5Vol(c5MaxMinVolMap.get("maxVol"));
-            result.setMinV5Vol(c5MaxMinVolMap.get("minVol"));
-            result.setMaxV10Vol(c10MaxMinVolMap.get("maxVol"));
-            result.setMinV10Vol(c10MaxMinVolMap.get("minVol"));
-            result.setMaxV20Vol(c20MaxMinVolMap.get("maxVol"));
-            result.setMinV20Vol(c20MaxMinVolMap.get("minVol"));
-            result.setMaxV60Vol(c60MaxMinVolMap.get("maxVol"));
-            result.setMinV60Vol(c60MaxMinVolMap.get("minVol"));
-
-
-
-
         }else{
             Float  closePrice  = Float.parseFloat( String.valueOf(result.getClosePrice()) ); //Float转换double 数据会变化
             result.setPreClosePrice(closePrice);
@@ -814,7 +361,6 @@ public class StockService {
         result.setPriceRate( Math.round(   (result.getClosePrice()-result.getPreClosePrice())*1000/result.getPreClosePrice())  );
         result.setSwing(  Math.round((result.getHighPrice()- result.getLowPrice())*1000/result.getPreClosePrice()));
         result.setV20Rate(  Math.round ((result.getVolume()-result.getV20Avg() )*100/result.getV20Avg()) ) ;
-        result.setV5Rate(  Math.round ((result.getVolume()-result.getV20Avg() )*100/result.getV5Avg()) ) ;
         result.setPeriod(getPeriod(result.getPriceRate()));
         result.setHighLow(getHighLowType(result.getClosePrice(),result.getC60Avg()));
 
@@ -844,12 +390,12 @@ public class StockService {
 
         }
 
-        if(hisVol.size()>=60){
+        if(hisVol.size()>0){
             hisVol.remove(0);
         }
 
         hisVol.add(result.getVolume());
-        if(hisClosePrice.size()>60){
+        if(hisClosePrice.size()>0){
             hisClosePrice.remove(0);
         }
         hisClosePrice.add(Float.parseFloat(String.valueOf(result.getClosePrice())));
@@ -860,124 +406,6 @@ public class StockService {
 
         return result;
     }
-
-
-    /**
-     * @param bean
-     *  recentHorizon
-     *        horOperTime
-     *        horSeq
-     *        horMaxPrice
-     *        horMinPrice
-     *        horMaxMinRate
-     *        horLasDay   横盘持续天数
-     *        horType   10  代表 10日 horMaxMinRate<6; 20 代表 20日  horMaxMinRate<10 ，优先判断10
-     *        horPrice  最高价和最低价的平均值
-     * @param stockSwinglist
-     */
-
-    private void setRecentSwingInfo(StockDayBean bean,  List stockSwinglist, Map hisVolAndPrice){
-        StockSwingBean lastStockSwingean  = (StockSwingBean)  hisVolAndPrice.get("lastStockSwingInfo");
-//        float tmpMaxPrice =  lastStockSwingean.getMaxPrice();
-//        float tmpMinPrice = lastStockSwingean.getMinPrice();
-        int price10Rate =   Math.round( (bean.getMaxC10Price()-bean.getMinC10Price())*1000/bean.getMaxC10Price() );
-        int price20Rate =   Math.round( (bean.getMaxC20Price()-bean.getMinC20Price())*1000/bean.getMaxC20Price() );
-        int price60Rate =   Math.round( (bean.getMaxC60Price()-bean.getMinC20Price())*1000/bean.getMaxC60Price() );
-        String swingType ="";
-        int lastDayNum =0 ;//持续时间
-        if(price10Rate <60  ){
-            swingType = "H";
-            lastDayNum = 10;
-        }else if( price20Rate<80){
-            swingType = "H";
-            lastDayNum = 20;
-        }
-//        if(price60Rate<200 &&  !"H".equals(swingType)){
-//            swingType = "Z";
-//            lastDayNum = 60;
-//        }
-
-        if( StringUtils.isNotBlank(swingType) ){
-           if(lastStockSwingean !=null && lastStockSwingean.getStockSeq()+1 ==  bean.getSeq()  ){
-              boolean updateVol = false;
-               boolean updatePrice = false;
-               if (bean.getClosePrice() >  lastStockSwingean.getMaxPrice()) {
-                   lastStockSwingean.setMaxPrice(bean.getClosePrice());
-                   updatePrice= true;
-               } else if (bean.getClosePrice() < lastStockSwingean.getMinPrice()) {
-                   lastStockSwingean.setMinPrice(bean.getClosePrice());
-                   updatePrice= true;
-               }
-               if(updatePrice){
-                   float tmpAvgPrice =  (lastStockSwingean.getMaxPrice()+lastStockSwingean.getMinPrice())/2;
-                   lastStockSwingean.setAvgPrice(  (float)(Math.round(tmpAvgPrice*100))/100 );
-                   lastStockSwingean.setPriceRate(   Math.round( (lastStockSwingean.getMaxPrice()-lastStockSwingean.getMinPrice())*1000/lastStockSwingean.getMaxPrice() ) );
-               }
-              lastStockSwingean.setOperTime(bean.getOperTime());
-              lastStockSwingean.setStockSeq(bean.getSeq()-1);
-              lastStockSwingean.setLastDay(lastStockSwingean.getLastDay()+1);
-
-               if(bean.getVolume()> lastStockSwingean.getMaxVol() ){
-                   lastStockSwingean.setMaxVol(bean.getVolume());
-                   updateVol =true;
-               }else if(bean.getVolume()<lastStockSwingean.getMinVol()){
-                   lastStockSwingean.setMinVol(bean.getVolume());
-                   updateVol= true;
-               }
-               if(updateVol){
-                   lastStockSwingean.setAvgVol( (lastStockSwingean.getMaxVol()+lastStockSwingean.getMinVol())/2 );
-                   lastStockSwingean.setVolRate(   Math.round( (lastStockSwingean.getMaxVol()-lastStockSwingean.getMinVol())*100/lastStockSwingean.getMinVol() )   );
-               }
-               if(stockSwinglist.size()>0) {  //如果本次横盘信息和以前横盘信息连起来，则代表已经添加到里面，不在更新。
-                   long swingSeq =    ((StockSwingBean)stockSwinglist.get(stockSwinglist.size()-1)).getSwingSeq();
-                   if(swingSeq!= lastStockSwingean.getSwingSeq()){
-                       stockSwinglist.add(lastStockSwingean);
-                   }
-               }else{
-                   stockSwinglist.add(lastStockSwingean);
-               }
-         }else {
-               //走到这 代表没有初始的信息，或者 跟上一次信息断开，重新插入新记录
-               long swingSeq = 1;
-               StockSwingBean tmpLastStockSwingean  = new StockSwingBean();
-               if(lastStockSwingean!= null){
-                   swingSeq = lastStockSwingean.getSwingSeq()+1;
-               }
-               tmpLastStockSwingean.setSwingSeq(swingSeq);
-               tmpLastStockSwingean.setStockCode(bean.getStockCode());
-               tmpLastStockSwingean.setOperTime(bean.getOperTime());
-               tmpLastStockSwingean.setStockSeq(bean.getSeq()-1);
-               tmpLastStockSwingean.setLastDay(lastDayNum);
-               tmpLastStockSwingean.setSwingType(swingType);
-               if(lastDayNum ==10){
-                   tmpLastStockSwingean.setMaxPrice(bean.getMaxC10Price());
-                   tmpLastStockSwingean.setMinPrice(bean.getMinC10Price());
-                   tmpLastStockSwingean.setMaxVol(bean.getMaxV10Vol());
-                   tmpLastStockSwingean.setMinVol(bean.getMinV10Vol());
-               }else if(lastDayNum == 20){
-                   tmpLastStockSwingean.setMaxPrice(bean.getMaxC20Price());
-                   tmpLastStockSwingean.setMinPrice(bean.getMinC20Price());
-                   tmpLastStockSwingean.setMaxVol(bean.getMaxV20Vol());
-                   tmpLastStockSwingean.setMinVol(bean.getMinV20Vol());
-               }else if(lastDayNum == 60){
-                   tmpLastStockSwingean.setMaxPrice(bean.getMaxC60Price());
-                   tmpLastStockSwingean.setMinPrice(bean.getMinC60Price());
-                   tmpLastStockSwingean.setMaxVol(bean.getMaxV60Vol());
-                   tmpLastStockSwingean.setMinVol(bean.getMinV60Vol());
-               }
-               tmpLastStockSwingean.setAvgVol( (tmpLastStockSwingean.getMaxVol()+tmpLastStockSwingean.getMinVol())/2);
-               float tmpAvgPrice =  (tmpLastStockSwingean.getMaxPrice()+tmpLastStockSwingean.getMinPrice())/2;
-               tmpLastStockSwingean.setAvgPrice(  (float)(Math.round(tmpAvgPrice*100))/100 );
-               tmpLastStockSwingean.setPriceRate(Math.round( (tmpLastStockSwingean.getMaxPrice()-tmpLastStockSwingean.getMinPrice())*1000/tmpLastStockSwingean.getMaxPrice() ));
-               tmpLastStockSwingean.setVolRate( Math.round( (tmpLastStockSwingean.getMaxVol()-tmpLastStockSwingean.getMinVol())*100/tmpLastStockSwingean.getMinVol() )   );
-               stockSwinglist.add(tmpLastStockSwingean);
-               hisVolAndPrice.put("lastStockSwingInfo",tmpLastStockSwingean);
-           }
-        }
-    }
-
-
-
 
     private void putPriceDesc(  StockDayBean bean){
         StringBuffer sbf = new StringBuffer();
@@ -1099,7 +527,7 @@ public class StockService {
                 Map param = new HashMap();
                 param.put("seq",currStockDayInflection.getSeq()-1);
                 param.put("stockCode",currStockDayInflection.getStockCode());
-                String getLastConfirmInflectionSql= "com.guoxc.info.dao.stockInflection.getInflectionNewInfo";
+                String getLastConfirmInflectionSql= "com.guoxc.info.dao.stockInflection.getLastConfirmInflectionNewInfo";
                 lastConfirmDayInflection =  (StockDayInflectionBean) baseDao.selectOne(getLastConfirmInflectionSql ,param) ;
                 lastDayInflectionMap.put("lastConfirmDayInflection",lastConfirmDayInflection);
                 lastDayInflectionMap.put("lastConfirmOffset",0-lastConfirmDayInflection.getIntervalDay());
@@ -1465,70 +893,6 @@ public class StockService {
     }
 
     private Long getlastVolAvg(List <Long>list, int num ){
-        int i =list.size()-1;
-        long tmp = 0l;
-        int realNum = 0;
-        for(int j=0; j <num;j++){
-            if( (i-j) >=0){
-                tmp = tmp+ list.get(i-j);
-                realNum++;
-            }
-        }
-        return  Long.parseLong( String.valueOf(Math.round(tmp/realNum)));
-    }
-
-    private Map<String,Float> getRecentMaxMinPrice(List<Float> hisClosePriceList, int num ){
-        Map result = new HashMap();
-        int i =hisClosePriceList.size()-1;
-        float tmp = 0l;
-        int realNum = 0;
-        float maxPrice = hisClosePriceList.get(i);
-        float minPrice = maxPrice;
-
-
-        for(int j=1; j <num;j++){
-            if( (i-j) >=0){
-                tmp =  hisClosePriceList.get(i-j);
-                if(tmp>maxPrice){
-                    maxPrice = tmp;
-                }else if(tmp<minPrice){
-                    minPrice = tmp;
-                }
-                realNum++;
-            }
-        }
-        result.put("maxPrice",maxPrice);
-        result.put("minPrice",minPrice);
-        return result;
-    }
-
-
-    private Map<String,Long> getRecentMaxMinVol(List <Long>hisVolList, int num ){
-        Map result = new HashMap();
-        int i =hisVolList.size()-1;
-        Long tmp = 0l;
-        int realNum = 0;
-        Long maxVol = hisVolList.get(i);
-        Long minVol = maxVol;
-
-
-        for(int j=1; j <num;j++){
-            if( (i-j) >=0){
-                tmp =  hisVolList.get(i-j);
-                if(tmp>maxVol){
-                    maxVol = tmp;
-                }else if(tmp<minVol){
-                    minVol = tmp;
-                }
-                realNum++;
-            }
-        }
-        result.put("maxVol",maxVol);
-        result.put("minVol",minVol);
-        return result;
-    }
-
-    private Long getMinRecentPrice(List <Long>list, int num ){
         int i =list.size()-1;
         long tmp = 0l;
         int realNum = 0;

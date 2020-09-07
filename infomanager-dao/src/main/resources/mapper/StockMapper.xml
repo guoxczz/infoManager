@@ -3,8 +3,43 @@
 		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.guoxc.info.dao.StockDao" >
+
+	<resultMap id="StockDayResultMap" type="com.guoxc.info.bean.info.StockDayBean">
+	<id column="STOCKCODE" jdbcType="BIGINT" property="stockCode" />
+	<id column="OPERTIME" jdbcType="TIMESTAMP" property="operTime" />
+	<result column="OPENPRICE" jdbcType="FLOAT" property="openPrice" />
+	<result column="HIGHPRICE" jdbcType="FLOAT" property="highPrice" />
+	<result column="LOWPRICE" jdbcType="FLOAT" property="lowPrice" />
+	<result column="CLOSEPRICE" jdbcType="FLOAT" property="closePrice" />
+	<result column="VOLUME" jdbcType="INTEGER" property="volume" />
+	<result column="TURNOVER" jdbcType="INTEGER" property="turnover" />
+	<result column="C5AVG" jdbcType="FLOAT" property="c5Avg" />
+	<result column="C20AVG" jdbcType="FLOAT" property="c20Avg" />
+	<result column="C60AVG" jdbcType="FLOAT" property="c60Avg" />
+	<result column="V5AVG" jdbcType="INTEGER" property="v5Avg" />
+	<result column="V20AVG" jdbcType="INTEGER" property="v20Avg" />
+	<result column="V60AVG" jdbcType="INTEGER" property="v60Avg" />
+	<result column="PRECLOSEPRICE" jdbcType="FLOAT" property="preClosePrice" />
+	<result column="PRICE_RATE" jdbcType="FLOAT" property="priceRate" />
+	<result column="SWING" jdbcType="INTEGER" property="swing" />
+	<result column="V20_RATE" jdbcType="INTEGER" property="v20Rate" />
+	<result column="PERIOD" jdbcType="INTEGER" property="period" />
+	<result column="HIGH_LOW" jdbcType="INTEGER" property="highLow" />
+	<result column="SEQ" jdbcType="INTEGER" property="seq" />
+	<result column="MACD_CROSS" jdbcType="INTEGER" property="macdCross" />
+	<result column="DIF" jdbcType="FLOAT" property="dif" />
+	<result column="DEA" jdbcType="FLOAT" property="dea" />
+	<result column="MACD_INFO" jdbcType="VARCHAR" property="macdInfo" />
+	<result column="JZ_TAIL" jdbcType="FLOAT" property="jzTail" />
+	<result column="JZ_BOY" jdbcType="FLOAT" property="jzBody" />
+	<result column="openrate" jdbcType="FLOAT" property="openRate" />
+	<result column="highrate" jdbcType="FLOAT" property="highRate" />
+	<result column="lowrate" jdbcType="FLOAT" property="lowRate" />
+	<result column="closerate" jdbcType="FLOAT" property="closeRate" />
+	</resultMap>
+
 	<insert id="insertStockDay"  parameterType="com.guoxc.info.bean.info.StockDayBean" >
-	insert into T_STOCK_DAY (stockcode,operTime, openprice, highprice, lowprice,
+	insert into T_STOCK_DAY (stockCode,operTime, openprice, highprice, lowprice,
 		closeprice, volume, turnover)
 		values( #{stockCode,jdbcType=VARCHAR}, #{operTime,jdbcType=TIMESTAMP},
 		#{openPrice,jdbcType=FLOAT}, #{highPrice,jdbcType=FLOAT}, #{lowPrice,jdbcType=FLOAT},
@@ -41,6 +76,24 @@
 		from dual
 	</foreach>
 </insert>
+
+
+	<update id="clearStockTmpDay" parameterType="string" >
+        truncate table T_TOCK_TMP_DAY
+    </update>
+
+	<insert id="insertStockTmpDayList"  parameterType="java.util.List" >
+		insert into T_TOCK_TMP_DAY (stockcode,stockname, pricerate, closeprice, volrate)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.stockName,jdbcType=TIMESTAMP},
+			#{item.lowPrice,jdbcType=FLOAT},
+			#{item.closePrice,jdbcType=FLOAT},
+			#{item.highPrice,jdbcType=FLOAT}
+			from dual
+		</foreach>
+	</insert>
 
 
 	<insert id="insertStockDayZSList"  parameterType="java.util.List" >
@@ -118,17 +171,71 @@
 
 
 
+
 	<insert id="insertStockDataAnaBatch" >
 		insert into t_stock_day_ana (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRECLOSEPRICE, PRICE_RATE, SWING, V20_RATE,
-		PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY)
+		PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY,openrate,highrate,lowrate,closerate,MAXC20PRICE,MAXC60PRICE,MINC20PRICE,MINC60PRICE,
+		MAXC5PRICE, MAXC10PRICE, MINC5PRICE, MINC10PRICE, S5AVG, S10AVG, S20AVG, V5_RATE, MAXV5VOL, MINV5VOL, MAXV10VOL, MINV10VOL,MAXV20VOL,MINV20VOL,MAXV60VOL,MINV60VOL)
 
 		<foreach collection="list" index="" item="item" separator="union all">
-		select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},#{item.macdInfo},#{item.jzTail},#{item.jzBody} from dual
+		select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},
+			#{item.macdInfo},#{item.jzTail},#{item.jzBody},#{item.openRate},#{item.highRate},#{item.lowRate},#{item.closeRate},#{item.maxC20Price},#{item.maxC60Price},#{item.minC20Price},#{item.minC60Price},
+			#{item.maxC5Price},#{item.maxC10Price},#{item.minC5Price},#{item.minC10Price},#{item.s5Avg},#{item.s10Avg},#{item.s20Avg},#{item.v5Rate},#{item.maxV5Vol},#{item.minV5Vol},#{item.maxV10Vol},#{item.minV10Vol},
+			#{item.maxV20Vol},#{item.minV20Vol},#{item.maxV60Vol},#{item.minV60Vol}
+			from dual
+		</foreach>
+	</insert>
+
+	<insert id="insertStockPredictBatch" >
+		insert into T_STOCK_PREDICT (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRECLOSEPRICE, PRICE_RATE, SWING, V20_RATE,
+		PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY,openrate,highrate,lowrate,closerate,MAXC20PRICE,MAXC60PRICE,MINC20PRICE,MINC60PRICE,smallinp)
+
+		<foreach collection="list" index="" item="item" separator="union all">
+			select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},
+			#{item.macdInfo},#{item.jzTail},#{item.jzBody},#{item.openRate},#{item.highRate},#{item.lowRate},#{item.closeRate},#{item.maxC20Price},#{item.maxC60Price},#{item.minC20Price},#{item.minC60Price} ,#{item.smallInP} from dual
 		</foreach>
 	</insert>
 
 	<select id="getMaxSeqByStockCode"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayBean">
 	  select seq,MACD_INFO  macdInfo,opertime,dif,dea  from (  select  t.* from t_stock_day_ana  t   where stockcode = #{seq}  order by t.opertime desc ) a where rownum =1
+	</select>
+
+	<select id="selectStockInfo" resultType="com.guoxc.info.bean.info.StockBean" >
+	  select stockCode, stockerNum,hangye2 from t_stock_info
+	</select>
+
+	<insert id="insertStockInfoList"  parameterType="java.util.List" >
+		insert into t_stock_info (STOCKCODE, STOCKNAME, HANGYE, PROV, ZGB, LTGB, LTSZ, STOCKTYPE, MAXCPRICE, MINCPRICE, MAX8MCPRICE, MAXVOL, MAX8M_VOL,
+		MINVOL, HANGYE2, ST, PRICERATE3D, PRICERATE20D, PRICERATE60D, RECENTTIPS, FINANCEUPDATEDAY, ONMARKETDAY, DEBTRATIO, NETPROFITRATE,
+		PROFITRATEBEFORE, STOCKERNUM, STOCKERNUMRATE)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},#{item.stockName,jdbcType=VARCHAR},#{item.hangYe,jdbcType=VARCHAR},#{item.prov,jdbcType=VARCHAR},
+			#{item.zgb,jdbcType=FLOAT},#{item.ltgb,jdbcType=FLOAT},#{item.ltsz,jdbcType=FLOAT},#{item.stockType,jdbcType=VARCHAR},#{item.maxCprice,jdbcType=FLOAT},
+			#{item.minCprice,jdbcType=FLOAT},#{item.max8MCprice,jdbcType=FLOAT},#{item.maxVol,jdbcType=INTEGER},#{item.max8MVol,jdbcType=INTEGER},
+			#{item.minVol,jdbcType=INTEGER},#{item.hangye2,jdbcType=VARCHAR},#{item.st,jdbcType=VARCHAR},#{item.priceRate3D,jdbcType=FLOAT},
+			#{item.priceRate20D,jdbcType=FLOAT},#{item.priceRate60D,jdbcType=FLOAT},#{item.recentTips,jdbcType=VARCHAR},#{item.financeUpdateDay,
+			jdbcType=TIMESTAMP},#{item.onMarketDay,jdbcType=TIMESTAMP},#{item.debtRatio,jdbcType=FLOAT},#{item.netProfitRate,jdbcType=FLOAT},
+			#{item.profitRateBefore,jdbcType=FLOAT},#{item.stockerNum,jdbcType=VARCHAR},#{item.stockerNumRate,jdbcType=INTEGER}
+			from dual
+		</foreach>
+	</insert>
+
+	<update id="updateStockInfo"   parameterType="com.guoxc.info.bean.info.StockBean"   >
+		update t_stock_info t set t.STOCKNAME= #{stockName,jdbcType=VARCHAR},t.HANGYE= #{hangYe,jdbcType=VARCHAR} ,  t.PROV= #{prov,jdbcType=VARCHAR} ,  t.zgb= #{zgb,jdbcType=FLOAT},
+		t.LTGB= #{ltgb,jdbcType=FLOAT} ,  t.ltsz= #{ltsz,jdbcType=FLOAT},t.st= #{st,jdbcType=VARCHAR},t.priceRate3D= #{priceRate3D,jdbcType=FLOAT},
+		t.priceRate20D= #{priceRate20D,jdbcType=FLOAT},t.priceRate60D= #{priceRate60D,jdbcType=FLOAT},t.recentTips= #{recentTips,jdbcType=VARCHAR},t.financeUpdateDay= #{financeUpdateDay,jdbcType=TIMESTAMP},
+		t.onMarketDay= #{onMarketDay,jdbcType=TIMESTAMP},t.debtRatio= #{debtRatio,jdbcType=FLOAT},t.netProfitRate= #{netProfitRate,jdbcType=FLOAT},
+		t.profitRateBefore= #{profitRateBefore,jdbcType=FLOAT},stockerNum= #{stockerNum,jdbcType=VARCHAR}, stockerNumRate= #{stockerNumRate,jdbcType=FLOAT} where stockcode= #{stockCode}
+	</update>
+
+	<update id="updateStockInfoHangye2"   parameterType="map"   >
+		update t_stock_info t set t.hangye2=replace(t.hangye2,','||#{hangye2},',')||#{hangye2}   where stockcode= #{stockCode}
+	</update>
+
+
+	<select id="selectStockDay"  parameterType="Map"   resultMap="StockDayResultMap" >
+		select * from  t_stock_day_ana t where t.stockcode = #{stockCode} and  t.opertime > #{operTime}  order by opertime
 	</select>
 
 </mapper>

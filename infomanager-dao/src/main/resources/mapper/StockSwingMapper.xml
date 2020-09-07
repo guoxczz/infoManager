@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.StockSwingDao" >
+
+
+	<insert id="insertStockSwingList"   parameterType="java.util.List" >
+	   insert into T_STOCK_SWING (stockCode,operTime, MAXPRICE, MINPRICE, MAXVOL,
+		MINVOL, LASTDAY, AVGPRICE,AVGVOL,STOCKSEQ,SWINGSEQ,SWINGTYPE,pricerate,volrate)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select #{item.stockCode},#{item.operTime},#{item.maxPrice},#{item.minPrice},#{item.maxVol},#{item.minVol},#{item.lastDay},
+			#{item.avgPrice},#{item.avgVol},#{item.stockSeq},#{item.swingSeq},#{item.swingType},#{item.priceRate},#{item.volRate} from dual
+		</foreach>
+	</insert>
+
+
+
+	<select id="getLastStockSwingByStockCode"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockSwingBean">
+	  select *   from (  select  t.* from T_STOCK_SWING  t   where stockcode = #{stockCode}  order by t.opertime desc ) a where rownum =1
+	</select>
+
+
+	<select id="getStockStatByStockCode"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockSwingBean">
+	  select  t.* from t_stock_stat  t   where stockcode = #{stockCode}
+	</select>
+
+	<update id="updateStockSwing"   parameterType="com.guoxc.info.bean.info.StockSwingBean"   >
+		update T_STOCK_SWING t set t.operTime= #{operTime} ,t.maxPrice= #{maxPrice} ,  t.minPrice= #{minPrice} ,  t.maxVol= #{maxVol},  t.minVol= #{minVol},
+		t.lastDay= #{lastDay},t.avgPrice= #{avgPrice}  ,t.avgVol= #{avgVol} , t.stockSeq= #{stockSeq}, t.swingType= #{swingType}, t.pricerate= #{priceRate}, t.volrate= #{volRate}
+		 where t.stockcode= #{stockCode} and t.swingSeq= #{swingSeq}
+	</update>
+
+
+</mapper>

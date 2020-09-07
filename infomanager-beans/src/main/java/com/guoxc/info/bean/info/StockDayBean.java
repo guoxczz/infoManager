@@ -7,6 +7,7 @@ import java.util.Date;
 
 public class StockDayBean  extends BaseBean {
     private String stockCode;
+    private String stockName ;
     private Timestamp operTime;
     private float openPrice;
     private float highPrice;
@@ -49,6 +50,42 @@ public class StockDayBean  extends BaseBean {
     private float dayHigh;
     private String macdInfo;
 
+    private long openRate;
+    private long highRate;
+    private long lowRate;
+    private long closeRate;
+    private long priceDesc;
+
+    private float maxC20Price;
+    private float maxC60Price;
+    private float minC20Price;
+    private float minC60Price;
+    private float maxC5Price;
+    private float maxC10Price;
+    private float minC5Price;
+    private float minC10Price;
+    private String recentHorizon;
+    private String recentBox;
+    private long s5Avg ;
+    private long s10Avg ;
+    private long s20Avg ;
+    private long v5Rate;
+    private long minV5Vol;
+    private long maxV5Vol;
+    private long minV10Vol;
+    private long maxV10Vol;
+    private long minV20Vol;
+    private long maxV20Vol;
+    private long minV60Vol;
+    private long maxV60Vol;
+
+    public String getStockName() {
+        return stockName;
+    }
+
+    public void setStockName(String stockName) {
+        this.stockName = stockName;
+    }
 
     public String getStockCode() {
         return stockCode;
@@ -361,5 +398,221 @@ public class StockDayBean  extends BaseBean {
 
     public void setJzBody(int jzBody) {
         this.jzBody = jzBody;
+    }
+
+    public long getOpenRate() {
+        return openRate;
+    }
+
+    public void setOpenRate(long openRate) {
+        this.openRate = openRate;
+    }
+
+    public long getHighRate() {
+        return highRate;
+    }
+
+    public void setHighRate(long highRate) {
+        this.highRate = highRate;
+    }
+
+    public long getLowRate() {
+        return lowRate;
+    }
+
+    public void setLowRate(long lowRate) {
+        this.lowRate = lowRate;
+    }
+
+    public long getCloseRate() {
+        return closeRate;
+    }
+
+    public void setCloseRate(long closeRate) {
+        this.closeRate = closeRate;
+    }
+
+    public long getPriceDesc() {
+        return priceDesc;
+    }
+
+    public void setPriceDesc(long priceDesc) {
+        this.priceDesc = priceDesc;
+    }
+
+    public float getMaxC20Price() {
+        return maxC20Price;
+    }
+
+    public void setMaxC20Price(float maxC20Price) {
+        this.maxC20Price = maxC20Price;
+    }
+
+    public float getMaxC60Price() {
+        return maxC60Price;
+    }
+
+    public void setMaxC60Price(float maxC60Price) {
+        this.maxC60Price = maxC60Price;
+    }
+
+    public float getMinC20Price() {
+        return minC20Price;
+    }
+
+    public void setMinC20Price(float minC20Price) {
+        this.minC20Price = minC20Price;
+    }
+
+    public float getMinC60Price() {
+        return minC60Price;
+    }
+
+    public void setMinC60Price(float minC60Price) {
+        this.minC60Price = minC60Price;
+    }
+
+    public float getMaxC5Price() {
+        return maxC5Price;
+    }
+
+    public void setMaxC5Price(float maxC5Price) {
+        this.maxC5Price = maxC5Price;
+    }
+
+    public float getMaxC10Price() {
+        return maxC10Price;
+    }
+
+    public void setMaxC10Price(float maxC10Price) {
+        this.maxC10Price = maxC10Price;
+    }
+
+    public float getMinC5Price() {
+        return minC5Price;
+    }
+
+    public void setMinC5Price(float minC5Price) {
+        this.minC5Price = minC5Price;
+    }
+
+    public float getMinC10Price() {
+        return minC10Price;
+    }
+
+    public void setMinC10Price(float minC10Price) {
+        this.minC10Price = minC10Price;
+    }
+
+    public String getRecentHorizon() {
+        return recentHorizon;
+    }
+
+    public void setRecentHorizon(String recentHorizon) {
+        this.recentHorizon = recentHorizon;
+    }
+
+    public String getRecentBox() {
+        return recentBox;
+    }
+
+    public void setRecentBox(String recentBox) {
+        this.recentBox = recentBox;
+    }
+
+    public long getS5Avg() {
+        return s5Avg;
+    }
+
+    public void setS5Avg(long s5Avg) {
+        this.s5Avg = s5Avg;
+    }
+
+    public long getS10Avg() {
+        return s10Avg;
+    }
+
+    public void setS10Avg(long s10Avg) {
+        this.s10Avg = s10Avg;
+    }
+
+    public long getS20Avg() {
+        return s20Avg;
+    }
+
+    public void setS20Avg(long s20Avg) {
+        this.s20Avg = s20Avg;
+    }
+
+    public long getV5Rate() {
+        return v5Rate;
+    }
+
+    public void setV5Rate(long v5Rate) {
+        this.v5Rate = v5Rate;
+    }
+
+    public long getMinV5Vol() {
+        return minV5Vol;
+    }
+
+    public void setMinV5Vol(long minV5Vol) {
+        this.minV5Vol = minV5Vol;
+    }
+
+    public long getMaxV5Vol() {
+        return maxV5Vol;
+    }
+
+    public void setMaxV5Vol(long maxV5Vol) {
+        this.maxV5Vol = maxV5Vol;
+    }
+
+    public long getMinV10Vol() {
+        return minV10Vol;
+    }
+
+    public void setMinV10Vol(long minV10Vol) {
+        this.minV10Vol = minV10Vol;
+    }
+
+    public long getMaxV10Vol() {
+        return maxV10Vol;
+    }
+
+    public void setMaxV10Vol(long maxV10Vol) {
+        this.maxV10Vol = maxV10Vol;
+    }
+
+    public long getMinV20Vol() {
+        return minV20Vol;
+    }
+
+    public void setMinV20Vol(long minV20Vol) {
+        this.minV20Vol = minV20Vol;
+    }
+
+    public long getMaxV20Vol() {
+        return maxV20Vol;
+    }
+
+    public void setMaxV20Vol(long maxV20Vol) {
+        this.maxV20Vol = maxV20Vol;
+    }
+
+    public long getMinV60Vol() {
+        return minV60Vol;
+    }
+
+    public void setMinV60Vol(long minV60Vol) {
+        this.minV60Vol = minV60Vol;
+    }
+
+    public long getMaxV60Vol() {
+        return maxV60Vol;
+    }
+
+    public void setMaxV60Vol(long maxV60Vol) {
+        this.maxV60Vol = maxV60Vol;
     }
 }
