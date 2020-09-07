@@ -101,7 +101,7 @@ public class StockControl {
                     Timestamp lastDealDay = DateUtil.convertStringToTimestamp(lastDealDayStr, "yyyy-MM-dd");  //lastDealDayStr
                     if (lastDealDay.before(DateUtil.getCurrentDate())) {
 
-                    File[] files = new File("E:\\stock\\data\\test\\").listFiles();
+                    File[] files = new File("E:\\stock\\data\\dayadd\\").listFiles();
                     ThreadPoolExecutor executor = threadPool.getThreadPoolExecutor("STOCKMINDEAL");
 
                     for (File file : files) {

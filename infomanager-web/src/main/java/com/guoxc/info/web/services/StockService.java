@@ -542,19 +542,19 @@ public class StockService {
 
             String getMaxSeqSql= "com.guoxc.info.dao.StockDao.getMaxSeqByStockCode";
             StockDayBean lastStockDayean  = null ;
-//                     lastStockDayean  =  (StockDayBean) baseDao.selectOne(getMaxSeqSql ,stockCode) ;
+                     lastStockDayean  =  (StockDayBean) baseDao.selectOne(getMaxSeqSql ,stockCode) ;
             hisVolAndClosePrice.put("lastInfo",lastStockDayean);
 
             String getLastStockSwingSql= "com.guoxc.info.dao.StockSwingDao.getLastStockSwingByStockCode";
             StockSwingBean lastStockSwingean = null;
-//                     lastStockSwingean =  (StockSwingBean) baseDao.selectOne(getLastStockSwingSql ,stockCode) ;
+                     lastStockSwingean =  (StockSwingBean) baseDao.selectOne(getLastStockSwingSql ,stockCode) ;
 
             hisVolAndClosePrice.put("lastStockSwingInfo",lastStockSwingean);
 
 
             String getCurrInflectionSql= "com.guoxc.info.dao.stockInflection.getCurrInflection";
             StockDayInflectionBean stockDayInflection = null;
-//            StockDayInflectionBean stockDayInflection =  (StockDayInflectionBean) baseDao.selectOne(getCurrInflectionSql ,stockCode) ;
+             stockDayInflection =  (StockDayInflectionBean) baseDao.selectOne(getCurrInflectionSql ,stockCode) ;
             hisVolAndClosePrice.put("currStockDayInflection",stockDayInflection);
             logger.info("*****"+stockCode+" readDBinfo cost "+ ( System.currentTimeMillis()-currTime));
             currTime=System.currentTimeMillis();
@@ -591,33 +591,33 @@ public class StockService {
             logger.info("*****"+stockCode+" save DBdata1 cost "+ ( System.currentTimeMillis()-currTime));
             currTime=System.currentTimeMillis();
 // save stockSwing
-//            if(stockSwingList.size()>0){
-//                  if(lastStockSwingean != null ){
-//                      StockSwingBean tmpStockSwingean  =  (StockSwingBean) stockSwingList.get(0);
-//                       if(tmpStockSwingean.getSwingSeq() ==  lastStockSwingean.getSwingSeq()  ){
-//                           stockSwingList.remove(0);
-//                           baseDao.update("com.guoxc.info.dao.StockSwingDao.updateStockSwing",tmpStockSwingean);
-//                       }
-//                  }
-//                  if(stockSwingList.size()>0){
-//                      baseDao.insert("com.guoxc.info.dao.StockSwingDao.insertStockSwingList",stockSwingList);
-//                  }
-//            }
-//
-//            logger.info("*****"+stockCode+" save DBdata2 cost "+ ( System.currentTimeMillis()-currTime));
-//            currTime=System.currentTimeMillis();
-//            // save stockDayInflection
-//            if(stockDayInflection ==null){
-//                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
-//                if(tmpStockDayCurrInflection != null){
-//                    baseDao.insert("com.guoxc.info.dao.stockInflection.insertStockInflection",tmpStockDayCurrInflection);
-//                }
-//            }else{
-//                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
-//               if( tmpStockDayCurrInflection!= null && stockDayInflection.getSeq()<tmpStockDayCurrInflection.getSeq()){
-//                   baseDao.insert("com.guoxc.info.dao.stockInflection.updateStockInflection",tmpStockDayCurrInflection);
-//               }
-//            }
+            if(stockSwingList.size()>0){
+                  if(lastStockSwingean != null ){
+                      StockSwingBean tmpStockSwingean  =  (StockSwingBean) stockSwingList.get(0);
+                       if(tmpStockSwingean.getSwingSeq() ==  lastStockSwingean.getSwingSeq()  ){
+                           stockSwingList.remove(0);
+                           baseDao.update("com.guoxc.info.dao.StockSwingDao.updateStockSwing",tmpStockSwingean);
+                       }
+                  }
+                  if(stockSwingList.size()>0){
+                      baseDao.insert("com.guoxc.info.dao.StockSwingDao.insertStockSwingList",stockSwingList);
+                  }
+            }
+
+            logger.info("*****"+stockCode+" save DBdata2 cost "+ ( System.currentTimeMillis()-currTime));
+            currTime=System.currentTimeMillis();
+            // save stockDayInflection
+            if(stockDayInflection ==null){
+                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
+                if(tmpStockDayCurrInflection != null){
+                    baseDao.insert("com.guoxc.info.dao.stockInflection.insertStockInflection",tmpStockDayCurrInflection);
+                }
+            }else{
+                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
+               if( tmpStockDayCurrInflection!= null && stockDayInflection.getSeq()<tmpStockDayCurrInflection.getSeq()){
+                   baseDao.insert("com.guoxc.info.dao.stockInflection.updateStockInflection",tmpStockDayCurrInflection);
+               }
+            }
 
             logger.info("*****"+stockCode+" save DBdata3 cost "+ ( System.currentTimeMillis()-currTime));
 
