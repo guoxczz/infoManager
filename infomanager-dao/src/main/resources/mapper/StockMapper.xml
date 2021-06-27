@@ -5,37 +5,43 @@
 <mapper namespace="com.guoxc.info.dao.StockDao" >
 
 	<resultMap id="StockDayResultMap" type="com.guoxc.info.bean.info.StockDayBean">
-	<id column="STOCKCODE" jdbcType="BIGINT" property="stockCode" />
-	<id column="OPERTIME" jdbcType="TIMESTAMP" property="operTime" />
-	<result column="OPENPRICE" jdbcType="FLOAT" property="openPrice" />
-	<result column="HIGHPRICE" jdbcType="FLOAT" property="highPrice" />
-	<result column="LOWPRICE" jdbcType="FLOAT" property="lowPrice" />
-	<result column="CLOSEPRICE" jdbcType="FLOAT" property="closePrice" />
-	<result column="VOLUME" jdbcType="INTEGER" property="volume" />
-	<result column="TURNOVER" jdbcType="INTEGER" property="turnover" />
-	<result column="C5AVG" jdbcType="FLOAT" property="c5Avg" />
-	<result column="C20AVG" jdbcType="FLOAT" property="c20Avg" />
-	<result column="C60AVG" jdbcType="FLOAT" property="c60Avg" />
-	<result column="V5AVG" jdbcType="INTEGER" property="v5Avg" />
-	<result column="V20AVG" jdbcType="INTEGER" property="v20Avg" />
-	<result column="V60AVG" jdbcType="INTEGER" property="v60Avg" />
-	<result column="PRECLOSEPRICE" jdbcType="FLOAT" property="preClosePrice" />
-	<result column="PRICE_RATE" jdbcType="FLOAT" property="priceRate" />
-	<result column="SWING" jdbcType="INTEGER" property="swing" />
-	<result column="V20_RATE" jdbcType="INTEGER" property="v20Rate" />
-	<result column="PERIOD" jdbcType="INTEGER" property="period" />
-	<result column="HIGH_LOW" jdbcType="INTEGER" property="highLow" />
-	<result column="SEQ" jdbcType="INTEGER" property="seq" />
-	<result column="MACD_CROSS" jdbcType="INTEGER" property="macdCross" />
-	<result column="DIF" jdbcType="FLOAT" property="dif" />
-	<result column="DEA" jdbcType="FLOAT" property="dea" />
-	<result column="MACD_INFO" jdbcType="VARCHAR" property="macdInfo" />
-	<result column="JZ_TAIL" jdbcType="FLOAT" property="jzTail" />
-	<result column="JZ_BOY" jdbcType="FLOAT" property="jzBody" />
-	<result column="openrate" jdbcType="FLOAT" property="openRate" />
-	<result column="highrate" jdbcType="FLOAT" property="highRate" />
-	<result column="lowrate" jdbcType="FLOAT" property="lowRate" />
-	<result column="closerate" jdbcType="FLOAT" property="closeRate" />
+		<id column="STOCKCODE" jdbcType="BIGINT" property="stockCode" />
+		<id column="OPERTIME" jdbcType="TIMESTAMP" property="operTime" />
+		<result column="OPENPRICE" jdbcType="FLOAT" property="openPrice" />
+		<result column="HIGHPRICE" jdbcType="FLOAT" property="highPrice" />
+		<result column="LOWPRICE" jdbcType="FLOAT" property="lowPrice" />
+		<result column="CLOSEPRICE" jdbcType="FLOAT" property="closePrice" />
+		<result column="VOLUME" jdbcType="INTEGER" property="volume" />
+		<result column="TURNOVER" jdbcType="INTEGER" property="turnover" />
+		<result column="C5AVG" jdbcType="FLOAT" property="c5Avg" />
+		<result column="C20AVG" jdbcType="FLOAT" property="c20Avg" />
+		<result column="C60AVG" jdbcType="FLOAT" property="c60Avg" />
+		<result column="V5AVG" jdbcType="INTEGER" property="v5Avg" />
+		<result column="V20AVG" jdbcType="INTEGER" property="v20Avg" />
+		<result column="V60AVG" jdbcType="INTEGER" property="v60Avg" />
+		<result column="PRECLOSEPRICE" jdbcType="FLOAT" property="preClosePrice" />
+		<result column="PRICE_RATE" jdbcType="FLOAT" property="priceRate" />
+		<result column="SWING" jdbcType="INTEGER" property="swing" />
+		<result column="V20_RATE" jdbcType="INTEGER" property="v20Rate" />
+		<result column="PERIOD" jdbcType="INTEGER" property="period" />
+		<result column="HIGH_LOW" jdbcType="INTEGER" property="highLow" />
+		<result column="SEQ" jdbcType="INTEGER" property="seq" />
+		<result column="MACD_CROSS" jdbcType="INTEGER" property="macdCross" />
+		<result column="DIF" jdbcType="FLOAT" property="dif" />
+		<result column="DEA" jdbcType="FLOAT" property="dea" />
+		<result column="MACD_INFO" jdbcType="VARCHAR" property="macdInfo" />
+		<result column="JZ_TAIL" jdbcType="FLOAT" property="jzTail" />
+		<result column="JZ_BOY" jdbcType="FLOAT" property="jzBody" />
+		<result column="openrate" jdbcType="FLOAT" property="openRate" />
+		<result column="highrate" jdbcType="FLOAT" property="highRate" />
+		<result column="lowrate" jdbcType="FLOAT" property="lowRate" />
+		<result column="closerate" jdbcType="FLOAT" property="closeRate" />
+		<result column="v5_rate" jdbcType="INTEGER" property="v5Rate" />
+		<result column="v20_rate" jdbcType="INTEGER" property="v20Rate" />
+		<result column="maxc20price" jdbcType="FLOAT" property="maxC20Price" />
+		<result column="minc20price" jdbcType="FLOAT" property="minC20Price" />
+		<result column="maxc60price" jdbcType="FLOAT" property="maxC60Price" />
+		<result column="minc60price" jdbcType="FLOAT" property="minC60Price" />
 	</resultMap>
 
 	<insert id="insertStockDay"  parameterType="com.guoxc.info.bean.info.StockDayBean" >
@@ -172,32 +178,36 @@
 
 
 
+	<!--<insert id="insertStockDataAnaBatch" >-->
+	<!--insert into t_stock_day_ana (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRECLOSEPRICE, PRICE_RATE, SWING, V20_RATE,-->
+	<!--PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY,openrate,highrate,lowrate,closerate,MAXC20PRICE,MAXC60PRICE,MINC20PRICE,MINC60PRICE,-->
+	<!--MAXC5PRICE, MAXC10PRICE, MINC5PRICE, MINC10PRICE, S5AVG, S10AVG, S20AVG, V5_RATE, MAXV5VOL, MINV5VOL, MAXV10VOL, MINV10VOL,MAXV20VOL,MINV20VOL,MAXV60VOL,MINV60VOL)VALUES-->
+
+	<!--<foreach collection="list" index="" item="item" separator=",">-->
+		<!--( #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},-->
+		<!--#{item.macdInfo},#{item.jzTail},#{item.jzBody},#{item.openRate},#{item.highRate},#{item.lowRate},#{item.closeRate},#{item.maxC20Price},#{item.maxC60Price},#{item.minC20Price},#{item.minC60Price},-->
+		<!--#{item.maxC5Price},#{item.maxC10Price},#{item.minC5Price},#{item.minC10Price},#{item.s5Avg},#{item.s10Avg},#{item.s20Avg},#{item.v5Rate},#{item.maxV5Vol},#{item.minV5Vol},#{item.maxV10Vol},#{item.minV10Vol},-->
+		<!--#{item.maxV20Vol},#{item.minV20Vol},#{item.maxV60Vol},#{item.minV60Vol}-->
+		<!--)-->
+	<!--</foreach>-->
+<!--</insert>-->
+
 	<insert id="insertStockDataAnaBatch" >
 		insert into t_stock_day_ana (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRECLOSEPRICE, PRICE_RATE, SWING, V20_RATE,
 		PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY,openrate,highrate,lowrate,closerate,MAXC20PRICE,MAXC60PRICE,MINC20PRICE,MINC60PRICE,
-		MAXC5PRICE, MAXC10PRICE, MINC5PRICE, MINC10PRICE, S5AVG, S10AVG, S20AVG, V5_RATE, MAXV5VOL, MINV5VOL, MAXV10VOL, MINV10VOL,MAXV20VOL,MINV20VOL,MAXV60VOL,MINV60VOL)
-
+		MAXC5PRICE, MAXC10PRICE, MINC5PRICE, MINC10PRICE, S5AVG, S10AVG, S20AVG, V5_RATE, MAXV5VOL, MINV5VOL, MAXV10VOL, MINV10VOL,MAXV20VOL,MINV20VOL,MAXV60VOL,MINV60VOL,S20RATE)
 		<foreach collection="list" index="" item="item" separator="union all">
-		select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},
+			select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},
 			#{item.macdInfo},#{item.jzTail},#{item.jzBody},#{item.openRate},#{item.highRate},#{item.lowRate},#{item.closeRate},#{item.maxC20Price},#{item.maxC60Price},#{item.minC20Price},#{item.minC60Price},
 			#{item.maxC5Price},#{item.maxC10Price},#{item.minC5Price},#{item.minC10Price},#{item.s5Avg},#{item.s10Avg},#{item.s20Avg},#{item.v5Rate},#{item.maxV5Vol},#{item.minV5Vol},#{item.maxV10Vol},#{item.minV10Vol},
-			#{item.maxV20Vol},#{item.minV20Vol},#{item.maxV60Vol},#{item.minV60Vol}
+			#{item.maxV20Vol},#{item.minV20Vol},#{item.maxV60Vol},#{item.minV60Vol},#{item.s20Rate}
 			from dual
 		</foreach>
 	</insert>
 
-	<insert id="insertStockPredictBatch" >
-		insert into T_STOCK_PREDICT (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRECLOSEPRICE, PRICE_RATE, SWING, V20_RATE,
-		PERIOD,  HIGH_LOW, SEQ, MACD_CROSS, DIF, DEA, MACD_INFO,JZ_TAIL,JZ_BOY,openrate,highrate,lowrate,closerate,MAXC20PRICE,MAXC60PRICE,MINC20PRICE,MINC60PRICE,smallinp)
-
-		<foreach collection="list" index="" item="item" separator="union all">
-			select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.preClosePrice},#{item.priceRate},#{item.swing},#{item.v20Rate},#{item.period},#{item.highLow},#{item.seq},#{item.macdCross},#{item.dif},#{item.dea},
-			#{item.macdInfo},#{item.jzTail},#{item.jzBody},#{item.openRate},#{item.highRate},#{item.lowRate},#{item.closeRate},#{item.maxC20Price},#{item.maxC60Price},#{item.minC20Price},#{item.minC60Price} ,#{item.smallInP} from dual
-		</foreach>
-	</insert>
 
 	<select id="getMaxSeqByStockCode"  parameterType="string"  resultType="com.guoxc.info.bean.info.StockDayBean">
-	  select seq,MACD_INFO  macdInfo,opertime,dif,dea  from (  select  t.* from t_stock_day_ana  t   where stockcode = #{seq}  order by t.opertime desc ) a where rownum =1
+	  select seq,MACD_INFO  macdInfo,opertime,dif,dea  from (  select  t.* from t_stock_day_ana  t   where stockcode = #{stockCode}  order by t.opertime desc ) a where rownum =1
 	</select>
 
 	<select id="selectStockInfo" resultType="com.guoxc.info.bean.info.StockBean" >
@@ -236,6 +246,14 @@
 
 	<select id="selectStockDay"  parameterType="Map"   resultMap="StockDayResultMap" >
 		select * from  t_stock_day_ana t where t.stockcode = #{stockCode} and  t.opertime > #{operTime}  order by opertime
+	</select>
+
+	<select id="getStockDayByOperTime"  parameterType="Map"   resultMap="StockDayResultMap" >
+		select * from t_stock_day_ana  where stockcode  = #{stockCode}
+		and  opertime in
+		          <foreach collection="operTimes" index="index" item="item" open="(" separator="," close=")">
+		             #{item}
+		        </foreach>
 	</select>
 
 </mapper>

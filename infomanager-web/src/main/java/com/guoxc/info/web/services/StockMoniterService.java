@@ -2,13 +2,13 @@ package com.guoxc.info.web.services;
 
 import com.alibaba.dubbo.common.json.JSON;
 import com.guoxc.info.bean.info.StockDayBean;
-import com.guoxc.info.dao.BsStaticDataDao;
 import com.guoxc.info.dao.StockDao;
 import com.guoxc.info.exception.GeneralException;
 import com.guoxc.info.utils.DateUtil;
+import com.guoxc.info.utils.FileUtil;
 import com.guoxc.info.utils.StringUtil;
 import com.guoxc.info.web.common.ConstantsInfo;
-import com.guoxc.info.web.control.StockControl;
+import com.guoxc.info.web.common.StockCalucate;
 import com.guoxc.info.web.dao.BaseDao;
 import com.guoxc.info.web.util.HttpUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -17,9 +17,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
+import java.io.File;
+import java.io.RandomAccessFile;
 import java.sql.Timestamp;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,13 +30,15 @@ import java.util.Map;
 @Service
 public class StockMoniterService {
     private final static Logger logger = LoggerFactory.getLogger(StockMoniterService.class);
-    private String lastDayPrice =   "{\"stockCodes\":\"sz000158,sz002464,sh603256,sz002733\",\"sh603256_avg20\":85000,\"sz000158_avg20\":662559,\"sh601999_lastPrice\":\"1\",\"sh601999_avg20\":140974,\"sz002731_lastPrice\":\"1\",\"sz002731_avg20\":146000,\"sz002464_lastPrice\":\"1\",\"sz002464_avg20\":562744}";
-    String getStockCode = ",603256,002733,";
+    private String lastDayPrice =   "{\"stockCodes\":\"sh603929,sz002779,sh600171,sh603893,sz002153,sz002931,sz002835,sh603690\",\"sh600171_avg20\":105380,\"sh603929_avg20\":28947,\"sz002050_avg20\":383850,\"sz002153_avg20\":29943,\"sh601999_lastPrice\":\"1\",\"sh603893_avg20\":603893,\"sz002731_lastPrice\":\"1\",\"sz002906_avg20\":57800,\"sz002464_lastPrice\":\"1\",\"sz002464_avg20\":562744}";
+    String careStockCode = ",002779,603929";
     private Map stockCodeMap = new HashMap();
     private Map alertMap = new HashMap();
     private Map<String , List> hisMap = new HashMap();
     private Map<String , Map> staticMap = new HashMap();
     private static Map  lastMap = new HashMap();
+    private static Map  detailInfo = new HashMap();
+    SimpleDateFormat sdf = new SimpleDateFormat("HH");
     @Autowired
     private StockDao stockDao  ;
     @Autowired
@@ -44,6 +48,7 @@ public class StockMoniterService {
     private BsStaticDataService bsStaticDataService;
 
     private  Map cfgParam = null;
+    private  Map transUpCfgParam = null;
 
    public  String moniterStock() {
         String result = null;
@@ -77,10 +82,35 @@ public class StockMoniterService {
         return result;
     }
 
+
+
+    public  String moniterStockTranservesUp() {
+        String result = null;
+        try {
+
+           List list = getTransUpMonitorStockList();
+            if(list.size()>0){
+                init(list);
+            }
+            logger.info("*****************minute*************begin");
+           for(int i=0;i<list.size();i++){
+                String stockCode = (String)list.get(i);
+               moniterTransUpStock(stockCode);
+           }
+            logger.info("*****************minute*************end");
+        } catch (Exception e) {
+            logger.info("err1", e);
+            result = "error";
+        }
+        return result;
+    }
+
+
     private boolean moniterStock(String stockCodes) throws GeneralException, ParseException {
 
        try{
 
+           //0: 未知; 1: 股票名字; 2: 股票代码; 3: 当前价格; 4: 昨收; 5: 今开; 6: 成交量（手）; 7: 外盘; 8: 内盘; 9: 买一;10: 买一量（手）;11-18: 买二 买五;19: 卖一;20: 卖一量;21-28: 卖二 卖五;29: 最近逐笔成交;30: 时间;31: 涨跌;32: 涨跌%;33: 最高;34: 最低;35: 价格/成交量（手）/成交额;36: 成交量（手）;37: 成交额（万）;38: 换手率;39: 市盈率;40:;41: 最高;42: 最低;43: 振幅;44: 流通市值;45: 总市值;46: 市净率;47: 涨停价;48: 跌停价;
            String response =    HttpUtil.doHttpPost("http://qt.gtimg.cn/q="+stockCodes,"");
            //v_sh603919="1~金徽酒~603919~14.31~14.40~14.41~36290~20105~16144~14.31~218~14.30~185~14.29~37~14.28~66~14.27~20~14.32~68~14.34~75~14.35~15~14.36~51~14.39~20~15:00:03/14.31/376/S/538628/22775|14:56:53/14.31/2/S/2862/22461|14:56:49/14.31/8/B/11448/22456|14:56:47/14.31/2/B/2862/22452|14:56:45/14.31/4/S/5724/22448|14:56:40/14.31/13/B/18601/22442~20200410153003~-0.09~-0.62~14.72~14.28~14.31/36290/52452445~36290~5245~1.00~20.63~~14.72~14.28~3.06~52.09~55.84~2.20~15.84~12.96~0.73~297~14.45~20.63~20.63~~~1.13~5245.2445~0.0000~0~ ~GP-A~-19.20~~1.58~10.65~8.51"
            if(StringUtil.isNotBlank(response)){
@@ -92,15 +122,18 @@ public class StockMoniterService {
                    String detailStr = stockInfoCols[29];
                    String stockCode = stockInfoCols[2];
                    Float currPrice = Float.parseFloat(stockInfoCols[3]);
+
+                   putChangeDetailInfo(stockCodes,detailInfo ,stockInfoCols);
                    if(StringUtils.isBlank(detailStr)){
                        Integer priceRate = getPriceRate(stockInfoCols[4], currPrice);
-                       String priInfo = getStockCode.indexOf(stockCode)>-1 ?"get ":"";
+                       String priInfo = careStockCode.indexOf(stockCode)>-1 ?"get ":"";
                       Integer volRate6s =  getVolRateRecent6s(stockCodes,Integer.parseInt(stockInfoCols[6]));
                       String tip = "";
                       if( volRate6s != null && volRate6s >6){
                           tip = "****";
                       }
-                       logger.info(priInfo+stockInfoCols[30].substring(8)+" "+stockCode+" "+currPrice + " "+priceRate+"‰"+" "+getVolRate(stockCodes,Integer.parseInt(stockInfoCols[6]) ) +" 6s "+tip+volRate6s );
+
+                      logger.info(priInfo+stockInfoCols[30].substring(8)+" "+stockCode+" "+currPrice + " "+priceRate+"‰"+" "+getVolRate(stockCodes,Integer.parseInt(stockInfoCols[6]) ) +" 6s "+tip+volRate6s+" " +getDifPriceRate6s(stockCode,priceRate) );
                        return true;
                    }
 
@@ -113,90 +146,262 @@ public class StockMoniterService {
            logger.info("err1", e);
            return false;
        }
-
         return false;
     }
 
-    private void detailAlert(String stockCodes, String[] stockInfoCols, String detailStr, String stockCode, Float currPrice) throws ParseException, GeneralException {
-        String[] details =   detailStr.split("\\|");
-        List list = hisMap.get(stockCode);
+    private void putChangeDetailInfo(String code ,Map detailInfo, String[] stockInfoCols){
+
+        List list = (List) detailInfo.get(code);
         if(list == null){
-            list =  new ArrayList();
-            hisMap.put(stockCode,list);
+            list = new ArrayList();
+            detailInfo.put(code,list);
         }
+        String time = (String) detailInfo.get(code+"lastTime");
 
-        Map stockStaticMap = staticMap.get(stockCode);
-        if(stockStaticMap == null){
-            stockStaticMap = new HashMap();
-            staticMap.put(stockCode,stockStaticMap);
-        }
-        Long stockMoniterVol1 =  (Long)cfgParam.get(stockCode+"MONITER_VOL1");
-        Long stockMoniterVol2 =  (Long)cfgParam.get(stockCode+"MONITER_VOL2");
-        Long stockMoniterBigVol =  (Long)cfgParam.get(stockCode+"BIG_VOL");
-        List addList = new ArrayList();
-
-        for(int i=details.length-1;i>=0;i--){
-            String[] detail = details[i].split("/");
-            StockDayBean bean = new StockDayBean();
-            bean.setStockName(stockInfoCols[1]);
-            bean.setStockCode(stockInfoCols[2]);
-            bean.setV5Avg( Long.parseLong(stockInfoCols[6])); // 当前成交量保存在5日均量
-            String day =  stockInfoCols[30].substring(0,8);
-            String time =stockInfoCols[30].substring(0,8)+""+detail[0].replace(":","");
-            bean.setOperTime(DateUtil.convertStringToTimestamp(time,"yyyyMMddHHmmss"));
-            bean.setClosePrice(Float.parseFloat(detail[1]));
-            Long vol =  Long.parseLong(detail[2]);
-            bean.setVolume(vol);
-
-            if(list.size()>0){
-                StockDayBean tmp = (StockDayBean) list.get(list.size()-1);
-                bean.setvDif(tmp.getClosePrice()-bean.getClosePrice());
-                if(bean.getClosePrice()==tmp.getClosePrice()){
-                    bean.setSwing(  Math.round(   (bean.getClosePrice()-tmp.getClosePrice())*10000/bean.getClosePrice()));
-                }
+        if(time== null){
+            time = stockInfoCols[30];
+            detailInfo.put(code+"lastTime",time);
+        }else{
+            if(time.equals(stockInfoCols[30])){
+                return ;
             }
-            String sellType = detail[3];
-            bean.setMacdInfo(sellType);
-            if(!stockCodeMap.containsKey(bean.getStockCode()+time)){
-                Integer priceRate = getPriceRate(stockInfoCols[4], bean.getClosePrice());
-                logger.info(bean.getStockCode()+" "+ DateUtil.getFormattedDate(bean.getOperTime(),"yyyy-MM-dd HH:mm:ss")+" "+bean.getClosePrice()+" "+bean.getVolume()+" "+bean.getMacdInfo() +" "+priceRate+"‰"+" "+getVolRate(stockCodes,Integer.parseInt(stockInfoCols[6])));
-                stockCodeMap.put(bean.getStockCode()+time,list.size());
-                list.add(bean);
-                addList.add(bean);
+        }
 
-                if(vol>=stockMoniterVol1){
-                    Long moniterNum = getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V1_"+sellType+"_NUM");
-                    Long sumVol =  getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V1_"+sellType+"_SUMVOL");
-                    moniterNum ++;
-                    stockStaticMap.put(stockCode+"_"+day+"V1_"+sellType+"_NUM" , moniterNum );
-                    stockStaticMap.put(stockCode+"_"+day+"V1_"+sellType+"_SUMVOL" ,sumVol+vol);
-                }else{
-                    if(vol>=stockMoniterVol2 ){
-                        Long moniterNum =  getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V2_"+sellType+"_NUM");
-                        Long sumVol =  getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V2_"+sellType+"_SUMVOL");
-                        moniterNum ++;
-                        stockStaticMap.put(stockCode+"_"+day+"V2_"+sellType+"_NUM" , moniterNum );
-                        stockStaticMap.put(stockCode+"_"+day+"V2_"+sellType+"_SUMVOL" ,sumVol+vol);
+       if(stockInfoCols.length>31){
+           StringBuilder sb = new StringBuilder();
+           for(int i=2;i<31;i++){
+               sb.append(stockInfoCols[i]).append("~");
+           }
+           dealDetail(code.substring(2), detailInfo, sb.toString());
+
+           detailInfo.put(code+"lastInfo",sb.toString());
+           list.add(sb.toString());
+
+
+       }
+
+       if(list.size()>0){
+            if(list.size() %10 ==0  || "15".equals(sdf.format(System.currentTimeMillis())) ){
+                writeDetail(code, list);
+            }
+
+       }
+
+    }
+
+
+
+    private void dealDetail(String code, Map detailInfo,String stockeDetaiStr) {
+
+
+        if(careStockCode.indexOf(code)>-1){
+
+
+            String[] stockInfoCols = stockeDetaiStr.split("~");
+            Long buyVol = Long.valueOf(stockInfoCols[5]);
+            Long selVol =  Long.valueOf(stockInfoCols[6]);
+
+
+            String lastInfoStr = (String) detailInfo.get(code+"lastInfo");
+            if(lastInfoStr != null){
+                String[] lastInfos = lastInfoStr.split("~");
+                Long diffBuyVol = buyVol- Long.valueOf(lastInfos[5]);
+                long diffSellVol = selVol - Long.valueOf(lastInfos[6]);
+
+
+                if(stockInfoCols[28].substring(8,11).equals("092")){ //9点20到9点30之间 ，不计算
+                    detailInfo.put(code+"lastInfo", stockeDetaiStr);
+                    return ;
+                }
+
+                if(stockInfoCols[28].substring(8,10).equals("15")){ //15点后不记录
+                    int priceRate =  getPriceRate(lastInfos[1],stockInfoCols[1]);
+                    if(priceRate>10 || priceRate<-10){
+                        writeDetailWarn(code,"尾盘变化 "  +priceRate+"‰");
                     }
+                    detailInfo.put(code+"lastInfo", null);
+                    return ;
                 }
 
-                if(vol>=stockMoniterBigVol){
-                    logger.warn("*********大单成交 " +stockCode+" "+ DateUtil.getFormattedDate(bean.getOperTime(),"yyyy-MM-dd HH:mm:ss")+" "+bean.getClosePrice()+" "+bean.getVolume()+" "+bean.getMacdInfo()+" "+bean.getDif());
-                }
 
+               String result =  StockCalucate.detailCompare(lastInfoStr,stockeDetaiStr, detailInfo);
+                if(StringUtils.isNotBlank(result)){
+                    writeDetailWarn(code,result);
+                }
             }
 
-
-        }
-        if(addList.size()>0){
-            baseDao.insert("com.guoxc.info.dao.StockMinute.insertStockTmpMinuteDetList",addList);
-            addList.clear();
-
-            detailAlert(list,stockCode);
-            detailStaticAlert(list,stockCode,stockStaticMap);
-            moniterLineAlert( stockCode, currPrice);
+            if(!stockInfoCols[28].substring(8,10).equals("15") && !stockInfoCols[28].substring(8,12).equals("0925") ){
+                detailInfo.put(code+"lastInfo",stockeDetaiStr);
+            }
         }
     }
+
+
+
+    private void writeDetail(String code, List <String>list){
+        try {
+
+            File file = new File("E:\\stock\\data\\dayDetail\\" +DateUtil.getCurrDate("yyyyMMdd"));
+            if(!file.exists()){
+                file.mkdir();
+            }
+
+            RandomAccessFile randomAccessFile = new RandomAccessFile(file.getAbsoluteFile()+"\\"+code+".txt","rw");
+            randomAccessFile.seek(randomAccessFile.length());
+            for(String line : list){
+                randomAccessFile.writeBytes(line+"\n");
+            }
+            randomAccessFile.close();
+            list.clear();
+        }  catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    private void writeDetailWarn(String code, String msg){
+        try {
+
+            File file = new File("E:\\stock\\data\\dayDetail\\" +DateUtil.getCurrDate("yyyyMMdd"));
+            if(!file.exists()){
+                file.mkdir();
+            }
+
+            RandomAccessFile randomAccessFile = new RandomAccessFile(file.getAbsoluteFile()+"\\"+code+"warn.txt","rw");
+            randomAccessFile.seek(randomAccessFile.length());
+             randomAccessFile.writeBytes(msg+"\n");
+            randomAccessFile.close();
+        }  catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    private boolean moniterTransUpStock(String stockCodes) throws GeneralException, ParseException {
+
+        try{
+
+            String response =    HttpUtil.doHttpPost("http://qt.gtimg.cn/q="+stockCodes,"");
+            //v_sh603919="1~金徽酒~603919~14.31~14.40~14.41~36290~20105~16144~14.31~218~14.30~185~14.29~37~14.28~66~14.27~20~14.32~68~14.34~75~14.35~15~14.36~51~14.39~20~15:00:03/14.31/376/S/538628/22775|14:56:53/14.31/2/S/2862/22461|14:56:49/14.31/8/B/11448/22456|14:56:47/14.31/2/B/2862/22452|14:56:45/14.31/4/S/5724/22448|14:56:40/14.31/13/B/18601/22442~20200410153003~-0.09~-0.62~14.72~14.28~14.31/36290/52452445~36290~5245~1.00~20.63~~14.72~14.28~3.06~52.09~55.84~2.20~15.84~12.96~0.73~297~14.45~20.63~20.63~~~1.13~5245.2445~0.0000~0~ ~GP-A~-19.20~~1.58~10.65~8.51"
+            if(StringUtil.isNotBlank(response)){
+                String[] stockInfos = response.split(";\n");
+                for(String stockInfoStr : stockInfos){
+//                  stockInfoStr = stockInfoStr.replace("\"","");
+                    String[] stockInfoCols = stockInfoStr.split("~");
+                    //15:00:03/14.31/376/S/538628/22775|14:56:53/14.31/2/S/2862/22461|14:56:49/14.31/8/B/11448/22456|14:56:47/14.31/2/B/2862/22452|14:56:45/14.31/4/S/5724/22448|14:56:40/14.31/13/B/18601/22442~20200410153003
+                    String detailStr = stockInfoCols[29];
+                    String stockCode = stockInfoCols[2];
+                    Float currPrice = Float.parseFloat(stockInfoCols[3]);
+                    if(StringUtils.isBlank(detailStr)){
+                        Integer priceRate = getPriceRate(stockInfoCols[4], currPrice);
+                        String priInfo = careStockCode.indexOf(stockCode)>-1 ?"get ":"";
+                        Integer volRate6s =  getTransUpVolRateRecent6s(stockCodes,Integer.parseInt(stockInfoCols[6]));
+                        String tip = "";
+                        if( volRate6s != null && volRate6s >6){
+                            tip = "****";
+                        }
+                        if(priceRate>60 ||priceRate<-60){
+                            logger.info(priInfo+stockInfoCols[30].substring(8)+" "+stockCode+" "+currPrice + " "+priceRate+"‰"+" "+getTransUpVolRate(stockCodes,Integer.parseInt(stockInfoCols[6]) ) +" 1min "+tip+volRate6s );
+                        }
+                        return true;
+                    }
+
+//                   detailAlert(stockCodes, stockInfoCols, detailStr, stockCode, currPrice);
+                }
+
+            }
+
+        }catch (Exception e) {
+            logger.info("err1 "+stockCodes, e);
+            return false;
+        }
+        return false;
+    }
+
+//    private void detailAlert(String stockCodes, String[] stockInfoCols, String detailStr, String stockCode, Float currPrice) throws ParseException, GeneralException {
+//        String[] details =   detailStr.split("\\|");
+//        List list = hisMap.get(stockCode);
+//        if(list == null){
+//            list =  new ArrayList();
+//            hisMap.put(stockCode,list);
+//        }
+//
+//        Map stockStaticMap = staticMap.get(stockCode);
+//        if(stockStaticMap == null){
+//            stockStaticMap = new HashMap();
+//            staticMap.put(stockCode,stockStaticMap);
+//        }
+//        Long stockMoniterVol1 =  (Long)cfgParam.get(stockCode+"MONITER_VOL1");
+//        Long stockMoniterVol2 =  (Long)cfgParam.get(stockCode+"MONITER_VOL2");
+//        Long stockMoniterBigVol =  (Long)cfgParam.get(stockCode+"BIG_VOL");
+//        List addList = new ArrayList();
+//
+//        for(int i=details.length-1;i>=0;i--){
+//            String[] detail = details[i].split("/");
+//            StockDayBean bean = new StockDayBean();
+//            bean.setStockName(stockInfoCols[1]);
+//            bean.setStockCode(stockInfoCols[2]);
+//            bean.setV5Avg( Long.parseLong(stockInfoCols[6])); // 当前成交量保存在5日均量
+//            String day =  stockInfoCols[30].substring(0,8);
+//            String time =stockInfoCols[30].substring(0,8)+""+detail[0].replace(":","");
+//            bean.setOperTime(DateUtil.convertStringToTimestamp(time,"yyyyMMddHHmmss"));
+//            bean.setClosePrice(Float.parseFloat(detail[1]));
+//            Long vol =  Long.parseLong(detail[2]);
+//            bean.setVolume(vol);
+//
+//            if(list.size()>0){
+//                StockDayBean tmp = (StockDayBean) list.get(list.size()-1);
+//                bean.setvDif(tmp.getClosePrice()-bean.getClosePrice());
+//                if(bean.getClosePrice()==tmp.getClosePrice()){
+//                    bean.setSwing(  Math.round(   (bean.getClosePrice()-tmp.getClosePrice())*10000/bean.getClosePrice()));
+//                }
+//            }
+//            String sellType = detail[3];
+//            bean.setMacdInfo(sellType);
+//            if(!stockCodeMap.containsKey(bean.getStockCode()+time)){
+//                Integer priceRate = getPriceRate(stockInfoCols[4], bean.getClosePrice());
+//                logger.info(bean.getStockCode()+" "+ DateUtil.getFormattedDate(bean.getOperTime(),"yyyy-MM-dd HH:mm:ss")+" "+bean.getClosePrice()+" "+bean.getVolume()+" "+bean.getMacdInfo() +" "+priceRate+"‰"+" "+getVolRate(stockCodes,Integer.parseInt(stockInfoCols[6])));
+//                stockCodeMap.put(bean.getStockCode()+time,list.size());
+//                list.add(bean);
+//                addList.add(bean);
+//
+//                if(vol>=stockMoniterVol1){
+//                    Long moniterNum = getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V1_"+sellType+"_NUM");
+//                    Long sumVol =  getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V1_"+sellType+"_SUMVOL");
+//                    moniterNum ++;
+//                    stockStaticMap.put(stockCode+"_"+day+"V1_"+sellType+"_NUM" , moniterNum );
+//                    stockStaticMap.put(stockCode+"_"+day+"V1_"+sellType+"_SUMVOL" ,sumVol+vol);
+//                }else{
+//                    if(vol>=stockMoniterVol2 ){
+//                        Long moniterNum =  getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V2_"+sellType+"_NUM");
+//                        Long sumVol =  getFloatFromMap(stockStaticMap,stockCode+"_"+day+"V2_"+sellType+"_SUMVOL");
+//                        moniterNum ++;
+//                        stockStaticMap.put(stockCode+"_"+day+"V2_"+sellType+"_NUM" , moniterNum );
+//                        stockStaticMap.put(stockCode+"_"+day+"V2_"+sellType+"_SUMVOL" ,sumVol+vol);
+//                    }
+//                }
+//
+//                if(vol>=stockMoniterBigVol){
+//                    logger.warn("*********大单成交 " +stockCode+" "+ DateUtil.getFormattedDate(bean.getOperTime(),"yyyy-MM-dd HH:mm:ss")+" "+bean.getClosePrice()+" "+bean.getVolume()+" "+bean.getMacdInfo()+" "+bean.getDif());
+//                }
+//
+//            }
+//
+//
+//        }
+//        if(addList.size()>0){
+//            baseDao.insert("com.guoxc.info.dao.StockMinute.insertStockTmpMinuteDetList",addList);
+//            addList.clear();
+//
+//            detailAlert(list,stockCode);
+//            detailStaticAlert(list,stockCode,stockStaticMap);
+//            moniterLineAlert( stockCode, currPrice);
+//        }
+//    }
 
     private Integer getPriceRate(String lastPriceStr, Float currPrice) {
         Integer priceRate = null;
@@ -206,6 +411,17 @@ public class StockMoniterService {
         }
         return priceRate;
     }
+
+    private Integer getPriceRate(String lastPriceStr, String currPriceStr) {
+        Integer priceRate = null;
+        if( lastPriceStr != null && currPriceStr!= null ){
+            Float currPrice = Float.parseFloat(currPriceStr);
+            Float lastPrice = Float.parseFloat(lastPriceStr);
+            priceRate = Math.round( (currPrice-  lastPrice)*1000/lastPrice);
+        }
+        return priceRate;
+    }
+
 
     private Integer getPriceRateFromCfg(String stockCodes, Float currPrice) {
         String lastPriceStr =(String)cfgParam.get(stockCodes+"_lastPrice");
@@ -220,8 +436,9 @@ public class StockMoniterService {
 
     private Integer getVolRate(String stockCodes, Integer vol) {
         Long lastvol =(Long)cfgParam.get(stockCodes+"_avg20");
+
         Integer volRate = null;
-        if( lastvol != null){
+        if( lastvol != null && lastvol>0){
             volRate = Math.round( vol*100/lastvol);
         }
         return volRate;
@@ -229,11 +446,65 @@ public class StockMoniterService {
 
     private Integer getVolRateRecent6s(String stockCodes, Integer vol) {
         Long avg6sVol =(Long)cfgParam.get(stockCodes+"_avg6s");
-       Integer last6sVol =  (Integer) lastMap.get("Last6sVol"+stockCodes);
-        lastMap.put("Last6sVol"+stockCodes,vol);
         Integer volRate = null;
-        if( last6sVol != null && last6sVol>0 ){
-            volRate = Math.round( (vol-last6sVol)/avg6sVol);
+        if(avg6sVol !=0 ){
+            Integer last6sVol =  (Integer) lastMap.get("Last6sVol"+stockCodes);
+            lastMap.put("Last6sVol"+stockCodes,vol);
+            if( last6sVol != null && last6sVol>0 ){
+                volRate = Math.round( (vol-last6sVol)/avg6sVol);
+            }
+        }
+        return volRate;
+    }
+
+    private String getDifPriceRate6s(String stockCodes, Integer priceRate) {
+        Integer priceRate6s =(Integer)cfgParam.get(stockCodes+"_priceRate6s");
+        String diffPriceRateStr = "";
+        if(priceRate6s != null   ){
+           Integer diffPriceRate =    priceRate-priceRate6s;
+
+           if(diffPriceRate>5||diffPriceRate<-5){
+               logger.info(stockCodes+"diffPriceRate:"+diffPriceRate);
+               diffPriceRateStr = "diffPriceRate6s:"+diffPriceRate;
+
+           }
+            try {
+                if(careStockCode.indexOf(stockCodes)>0){
+                    if(diffPriceRate>3||diffPriceRate<-3){
+                        logger.info(stockCodes+"diffPriceRate:"+diffPriceRate);
+                        diffPriceRateStr = "diffPriceRate6s:"+diffPriceRate;
+                        playSound(stockCodes,diffPriceRate>0?"up":"down");
+                    }
+
+                }
+            } catch (GeneralException e) {
+                e.printStackTrace();
+            }
+
+        }
+        cfgParam.put(stockCodes+"_priceRate6s",priceRate);
+        return diffPriceRateStr;
+    }
+
+
+    private Integer getTransUpVolRate(String stockCodes, Integer vol) {
+        Long lastvol =(Long)transUpCfgParam.get(stockCodes+"_avg20");
+
+        Integer volRate = null;
+        if( lastvol != null && lastvol>0){
+            volRate = Math.round( vol*100/lastvol);
+        }
+        return volRate;
+    }
+    private Integer getTransUpVolRateRecent6s(String stockCodes, Integer vol) {
+        Long avg6sVol =(Long)transUpCfgParam.get(stockCodes+"_avg6s");
+        Integer volRate = null;
+        if(avg6sVol !=0 ){
+            Integer last6sVol =  (Integer) lastMap.get("Last6sVolTransUp"+stockCodes);
+            lastMap.put("Last6sVolTransUp"+stockCodes,vol);
+            if( last6sVol != null && last6sVol>0 ){
+                volRate = Math.round( (vol-last6sVol)/avg6sVol);
+            }
         }
         return volRate;
     }
@@ -394,9 +665,12 @@ public class StockMoniterService {
         Process p = null;
         try {
             p = rt.exec(" cmd.exe  /c start wmplayer "+fileName);
-        } catch (IOException e) {
+//            p.wait(10l);
+//            p.destroy();
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
 
     }
 
@@ -423,7 +697,9 @@ public class StockMoniterService {
                        }
                        logger.info("-------------");
                    }else{
-                       moniterStock(stockCodes);
+                       long v20Avg =  getV20avg(stockCodes.substring(2));
+                       cfgParam.put(stockCodes+"_avg20",v20Avg);
+                       cfgParam.put(stockCodes+"_avg6s",v20Avg/(4*60*20) ); // 平均6秒成交量
                    }
                }
 
@@ -437,11 +713,30 @@ public class StockMoniterService {
     }
 
 
+    private  void init(List list){
+
+        try {
+            if(transUpCfgParam == null){
+                transUpCfgParam = new HashMap();
+                for(int i=0;i<list.size();i++){
+                    String stockCode = (String) list.get(i);
+                    long v20Avg =  getV20avg(stockCode.substring(2));
+                    transUpCfgParam.put(stockCode+"_avg20",v20Avg);
+                    transUpCfgParam.put(stockCode+"_avg6s",v20Avg/(120) ); // 平均6秒成交量
+                }
+            }
+        }catch(Exception e){
+            logger.error("init list moniterStock error",e);
+        }
+
+    }
+
+
     private long getV20avg(String stockCode){
         long result = 0l ;
         try {
             Map param = new HashMap();
-            Timestamp date =   DateUtil.addDay(DateUtil.getCurrentDate(),-10);
+            Timestamp date =   DateUtil.addDay(DateUtil.getCurrentDate(),-15);
             param.put("operTime",date);
             param.put("stockCode",stockCode);
             List stockDayList =   baseDao.queryForList("com.guoxc.info.dao.StockDao.selectStockDay",param);
@@ -449,7 +744,9 @@ public class StockMoniterService {
            for(int i=0;i<stockDayList.size();i++){
                sumV20avg = sumV20avg+   ((StockDayBean)stockDayList.get(i)).getV20Avg();
            }
-            result =  sumV20avg/stockDayList.size();
+           if(stockDayList.size()>0){
+               result =  sumV20avg/stockDayList.size();
+           }
 
 
         } catch (Exception e) {
@@ -589,7 +886,22 @@ public class StockMoniterService {
     }
 
 
+    private List getTransUpMonitorStockList(){
 
+       List result = new ArrayList();
+        List  list = FileUtil.readFileXml(new File("E:\\stock\\data\\monitor\\transervesUp.txt"),"gbk");
+        if(list != null){
+            for(int i=0;i<list.size();i++){
+                String stockCode = (String) list.get(i);
+                if(stockCode.startsWith("6")){
+                    result.add("sh"+stockCode);
+                }else if("0".equals(stockCode)) {
+                    result.add("sz"+stockCode);
+                }
+            }
+        }
+       return result;
+    }
 
 
 

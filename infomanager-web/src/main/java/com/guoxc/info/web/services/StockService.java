@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.guoxc.info.bean.info.StockBean;
 import com.guoxc.info.bean.info.StockDayBean;
 import com.guoxc.info.bean.info.StockDayInflectionBean;
-import com.guoxc.info.bean.info.StockSwingBean;
+import com.guoxc.info.bean.info.StockTransverseBean;
 import com.guoxc.info.dao.BsStaticDataDao;
 import com.guoxc.info.dao.StockDao;
 import com.guoxc.info.utils.DateUtil;
@@ -15,13 +15,13 @@ import com.guoxc.info.web.control.StockControl;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 import com.guoxc.info.web.dao.BaseDao;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -534,29 +534,32 @@ public class StockService {
             Map hisVolAndClosePrice = new HashMap();
             List <Float>hisVolList = new ArrayList();
             List<Float> hisClosePriceList = new ArrayList();
+            List<Float> hisSwingList = new ArrayList();
             logger.info("*****"+stockCode+" readFile cost "+ ( System.currentTimeMillis()-currTime));
             currTime=System.currentTimeMillis();
             hisVolAndClosePrice.put("hisVolList",hisVolList);
             hisVolAndClosePrice.put("hisClosePriceList",hisClosePriceList);
-
+            hisVolAndClosePrice.put("hisSwingList",hisSwingList);
 
             String getMaxSeqSql= "com.guoxc.info.dao.StockDao.getMaxSeqByStockCode";
             StockDayBean lastStockDayean  = null ;
                      lastStockDayean  =  (StockDayBean) baseDao.selectOne(getMaxSeqSql ,stockCode) ;
             hisVolAndClosePrice.put("lastInfo",lastStockDayean);
-
+            logger.info("*****"+stockCode+" readDBinfo1 cost "+ ( System.currentTimeMillis()-currTime));
+            currTime=System.currentTimeMillis();
             String getLastStockSwingSql= "com.guoxc.info.dao.StockSwingDao.getLastStockSwingByStockCode";
-            StockSwingBean lastStockSwingean = null;
-                     lastStockSwingean =  (StockSwingBean) baseDao.selectOne(getLastStockSwingSql ,stockCode) ;
+            StockTransverseBean lastStockSwingean = null;
+                     lastStockSwingean =  (StockTransverseBean) baseDao.selectOne(getLastStockSwingSql ,stockCode) ;
 
             hisVolAndClosePrice.put("lastStockSwingInfo",lastStockSwingean);
-
+            logger.info("*****"+stockCode+" readDBinfo2 cost "+ ( System.currentTimeMillis()-currTime));
+            currTime=System.currentTimeMillis();
 
             String getCurrInflectionSql= "com.guoxc.info.dao.stockInflection.getCurrInflection";
             StockDayInflectionBean stockDayInflection = null;
              stockDayInflection =  (StockDayInflectionBean) baseDao.selectOne(getCurrInflectionSql ,stockCode) ;
             hisVolAndClosePrice.put("currStockDayInflection",stockDayInflection);
-            logger.info("*****"+stockCode+" readDBinfo cost "+ ( System.currentTimeMillis()-currTime));
+            logger.info("*****"+stockCode+" readDBinfo3 cost "+ ( System.currentTimeMillis()-currTime));
             currTime=System.currentTimeMillis();
             for(int i=2; i<list.size();i++){
                 String line = (String) list.get(i);
@@ -593,7 +596,7 @@ public class StockService {
 // save stockSwing
             if(stockSwingList.size()>0){
                   if(lastStockSwingean != null ){
-                      StockSwingBean tmpStockSwingean  =  (StockSwingBean) stockSwingList.get(0);
+                      StockTransverseBean tmpStockSwingean  =  (StockTransverseBean) stockSwingList.get(0);
                        if(tmpStockSwingean.getSwingSeq() ==  lastStockSwingean.getSwingSeq()  ){
                            stockSwingList.remove(0);
                            baseDao.update("com.guoxc.info.dao.StockSwingDao.updateStockSwing",tmpStockSwingean);
@@ -605,21 +608,21 @@ public class StockService {
             }
 
             logger.info("*****"+stockCode+" save DBdata2 cost "+ ( System.currentTimeMillis()-currTime));
-            currTime=System.currentTimeMillis();
-            // save stockDayInflection
-            if(stockDayInflection ==null){
-                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
-                if(tmpStockDayCurrInflection != null){
-                    baseDao.insert("com.guoxc.info.dao.stockInflection.insertStockInflection",tmpStockDayCurrInflection);
-                }
-            }else{
-                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
-               if( tmpStockDayCurrInflection!= null && stockDayInflection.getSeq()<tmpStockDayCurrInflection.getSeq()){
-                   baseDao.insert("com.guoxc.info.dao.stockInflection.updateStockInflection",tmpStockDayCurrInflection);
-               }
-            }
-
-            logger.info("*****"+stockCode+" save DBdata3 cost "+ ( System.currentTimeMillis()-currTime));
+//            currTime=System.currentTimeMillis();
+//            // save stockDayInflection
+//            if(stockDayInflection ==null){
+//                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
+//                if(tmpStockDayCurrInflection != null){
+//                    baseDao.insert("com.guoxc.info.dao.stockInflection.insertStockInflection",tmpStockDayCurrInflection);
+//                }
+//            }else{
+//                StockDayInflectionBean tmpStockDayCurrInflection = (StockDayInflectionBean) hisVolAndClosePrice.get("currStockDayInflection");
+//               if( tmpStockDayCurrInflection!= null && stockDayInflection.getSeq()<tmpStockDayCurrInflection.getSeq()){
+//                   baseDao.insert("com.guoxc.info.dao.stockInflection.updateStockInflection",tmpStockDayCurrInflection);
+//               }
+//            }
+//
+//            logger.info("*****"+stockCode+" save DBdata3 cost "+ ( System.currentTimeMillis()-currTime));
 
         }catch (Exception e){
             logger.error("putStockDataFile2DDB_err",e);
@@ -646,8 +649,10 @@ public class StockService {
             Map hisVolAndClosePrice = new HashMap();
             List <Float>hisVolList = new ArrayList();
             List<Float> hisClosePriceList = new ArrayList();
+            List<Float> hisSwingList = new ArrayList();
             hisVolAndClosePrice.put("hisVolList",hisVolList);
             hisVolAndClosePrice.put("hisClosePriceList",hisClosePriceList);
+            hisVolAndClosePrice.put("hisSwingList",hisSwingList);
 
 
             for(int i=2; i<list.size();i++){
@@ -748,6 +753,8 @@ public class StockService {
         StockDayBean result = new StockDayBean();
         List <Long>hisVol = (List) hisVolAndPrice.get("hisVolList");
         List<Float> hisClosePrice = (List) hisVolAndPrice.get("hisClosePriceList");
+        List<Long> hisSwing = (List) hisVolAndPrice.get("hisSwingList");
+        Float preClosePrice = null;
         if(hisVol.size()==0){
             int beginNum = index-60>2? index-60:2;
             for(;beginNum<index;beginNum++){
@@ -756,6 +763,11 @@ public class StockService {
                 if(cols.length>5){
                     hisVol.add(Long.valueOf(cols[5])/100);
                     hisClosePrice.add(Float.valueOf(cols[4]));
+                       if(preClosePrice != null){
+                           hisSwing.add((long) Math.round( (Float.valueOf(cols[2])-Float.valueOf(cols[3]))*1000/preClosePrice));
+                       }
+
+                    preClosePrice = Float.valueOf(cols[4]);
                 }
             }
         }
@@ -797,9 +809,9 @@ public class StockService {
             result.setMinV20Vol(c20MaxMinVolMap.get("minVol"));
             result.setMaxV60Vol(c60MaxMinVolMap.get("maxVol"));
             result.setMinV60Vol(c60MaxMinVolMap.get("minVol"));
-
-
-
+            result.setS5Avg( getlastVolAvg(hisSwing,5));
+            result.setS10Avg( getlastVolAvg(hisSwing,10));
+            result.setS20Avg( getlastVolAvg(hisSwing,20));
 
         }else{
             Float  closePrice  = Float.parseFloat( String.valueOf(result.getClosePrice()) ); //Float转换double 数据会变化
@@ -810,11 +822,19 @@ public class StockService {
             result.setV5Avg(result.getVolume());
             result.setV20Avg(result.getVolume());
             result.setV60Avg(result.getVolume());
+            result.setS20Avg(  Math.round((result.getHighPrice()- result.getLowPrice())*1000/result.getPreClosePrice()));
         }
         result.setPriceRate( Math.round(   (result.getClosePrice()-result.getPreClosePrice())*1000/result.getPreClosePrice())  );
         result.setSwing(  Math.round((result.getHighPrice()- result.getLowPrice())*1000/result.getPreClosePrice()));
+        if(result.getS20Avg() ==0){
+            result.setS20Rate( 1);
+        }else{
+            result.setS20Rate( Math.round ( result.getSwing()*100/result.getS20Avg()));
+        }
+
+
         result.setV20Rate(  Math.round ((result.getVolume()-result.getV20Avg() )*100/result.getV20Avg()) ) ;
-        result.setV5Rate(  Math.round ((result.getVolume()-result.getV20Avg() )*100/result.getV5Avg()) ) ;
+        result.setV5Rate(  Math.round ((result.getVolume()-result.getV5Avg() )*100/result.getV5Avg()) ) ;
         result.setPeriod(getPeriod(result.getPriceRate()));
         result.setHighLow(getHighLowType(result.getClosePrice(),result.getC60Avg()));
 
@@ -854,6 +874,11 @@ public class StockService {
         }
         hisClosePrice.add(Float.parseFloat(String.valueOf(result.getClosePrice())));
 
+        if(hisSwing.size()>60){
+            hisSwing.remove(0);
+        }
+        hisSwing.add(result.getSwing());
+
         hisVolAndPrice.put("lastInfo",result);
 
         saveStockInflection(hisVolAndPrice,result);
@@ -877,7 +902,7 @@ public class StockService {
      */
 
     private void setRecentSwingInfo(StockDayBean bean,  List stockSwinglist, Map hisVolAndPrice){
-        StockSwingBean lastStockSwingean  = (StockSwingBean)  hisVolAndPrice.get("lastStockSwingInfo");
+        StockTransverseBean lastStockSwingean  = (StockTransverseBean)  hisVolAndPrice.get("lastStockSwingInfo");
 //        float tmpMaxPrice =  lastStockSwingean.getMaxPrice();
 //        float tmpMinPrice = lastStockSwingean.getMinPrice();
         int price10Rate =   Math.round( (bean.getMaxC10Price()-bean.getMinC10Price())*1000/bean.getMaxC10Price() );
@@ -894,11 +919,11 @@ public class StockService {
         }
 //        if(price60Rate<200 &&  !"H".equals(swingType)){
 //            swingType = "Z";
-//            lastDayNum = 60;
+//            lastDayNum = 60;DBdata1
 //        }
 
         if( StringUtils.isNotBlank(swingType) ){
-           if(lastStockSwingean !=null && lastStockSwingean.getStockSeq()+1 ==  bean.getSeq()  ){
+           if(lastStockSwingean !=null && lastStockSwingean.getStockSeq()+2 ==  bean.getSeq()  ){
               boolean updateVol = false;
                boolean updatePrice = false;
                if (bean.getClosePrice() >  lastStockSwingean.getMaxPrice()) {
@@ -928,18 +953,14 @@ public class StockService {
                    lastStockSwingean.setAvgVol( (lastStockSwingean.getMaxVol()+lastStockSwingean.getMinVol())/2 );
                    lastStockSwingean.setVolRate(   Math.round( (lastStockSwingean.getMaxVol()-lastStockSwingean.getMinVol())*100/lastStockSwingean.getMinVol() )   );
                }
-               if(stockSwinglist.size()>0) {  //如果本次横盘信息和以前横盘信息连起来，则代表已经添加到里面，不在更新。
-                   long swingSeq =    ((StockSwingBean)stockSwinglist.get(stockSwinglist.size()-1)).getSwingSeq();
-                   if(swingSeq!= lastStockSwingean.getSwingSeq()){
-                       stockSwinglist.add(lastStockSwingean);
-                   }
-               }else{
+               if(stockSwinglist.size()==0) {  //如果本次横盘信息和以前横盘信息连起来，则代表已经添加到里面，不在更新。
                    stockSwinglist.add(lastStockSwingean);
+                   hisVolAndPrice.put("lastStockSwingInfo",lastStockSwingean);
                }
          }else {
                //走到这 代表没有初始的信息，或者 跟上一次信息断开，重新插入新记录
                long swingSeq = 1;
-               StockSwingBean tmpLastStockSwingean  = new StockSwingBean();
+               StockTransverseBean tmpLastStockSwingean  = new StockTransverseBean();
                if(lastStockSwingean!= null){
                    swingSeq = lastStockSwingean.getSwingSeq()+1;
                }
@@ -1097,14 +1118,14 @@ public class StockService {
             if(currStockDayInflection !=null){
 //                hisDayInflection.put("currStockDayInflection",stockDayInflection);
                 Map param = new HashMap();
-                param.put("seq",currStockDayInflection.getSeq()-1);
+                param.put("seq",currStockDayInflection.getPreSeq());
                 param.put("stockCode",currStockDayInflection.getStockCode());
                 String getLastConfirmInflectionSql= "com.guoxc.info.dao.stockInflection.getInflectionNewInfo";
                 lastConfirmDayInflection =  (StockDayInflectionBean) baseDao.selectOne(getLastConfirmInflectionSql ,param) ;
-                lastDayInflectionMap.put("lastConfirmDayInflection",lastConfirmDayInflection);
-                lastDayInflectionMap.put("lastConfirmOffset",0-lastConfirmDayInflection.getIntervalDay());
-                lastDayInflectionMap.put("lastConfirmClosePrice",lastConfirmDayInflection.getClosePrice());
                 if(lastConfirmDayInflection !=null){
+                    lastDayInflectionMap.put("lastConfirmDayInflection",lastConfirmDayInflection);
+                    lastDayInflectionMap.put("lastConfirmOffset",0-lastConfirmDayInflection.getIntervalDay());
+                    lastDayInflectionMap.put("lastConfirmClosePrice",lastConfirmDayInflection.getClosePrice());
                     lastConfirmDayInflectionSeq = lastConfirmDayInflection.getSeq();
 
                 }
@@ -1133,8 +1154,8 @@ public class StockService {
             currStockDayBean.setClosePrice(currStockDayInflection.getClosePrice());
             stockList.add(0,currStockDayBean);//把当前记录加入最前面，进行统一计算
 
-            float lastConfirmClosePrice = lastConfirmDayInflection.getClosePrice();
-            int upDownType = lastConfirmDayInflection.getUpDownType(); // 拐点类型 1上升 ； 2 下降；
+//            float lastConfirmClosePrice = lastConfirmDayInflection.getClosePrice();
+//            int upDownType = lastConfirmDayInflection.getUpDownType(); // 拐点类型 1上升 ； 2 下降；
 
             for(int i=0;i<stockList.size();i=i+5){
                 Map tmpMaxMin = getMaxMinPrice(stockList,i,5);
@@ -1202,6 +1223,7 @@ public class StockService {
         stockDayInflection.setSwingRate(getPriceRate(lastDayInflectionMap,lastStockDay.getClosePrice()));
         stockDayInflection.setPreClosePrice(lastConfirmDayInflection.getClosePrice());
         stockDayInflection.setSeq(9999);
+        stockDayInflection.setPreSeq(lastConfirmDayInflection.getSeq());
 
         return stockDayInflection;
     }

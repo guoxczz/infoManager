@@ -8,6 +8,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
 
 import javax.servlet.ServletRequestListener;
 import java.util.Properties;
@@ -19,7 +20,6 @@ import java.util.Properties;
 public class WebApplication {
 
 	public static void main(String[] args) {
-
 		 SpringApplication.run(WebApplication.class, args);
 	}
 

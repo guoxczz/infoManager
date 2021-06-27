@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.StockDetail" >
+	<insert id="insertStockDetailList"  parameterType="java.util.List" >
+		insert into T_STOCK_DETAIL (STOCKCODE, OPERTIME, OPENPRICE, VOLUME, PRECLOSEPRICE, CURRPRICE, TIMESEQ, DIFFVOL, DIFFBUYVOL, DIFFSELLVOL,BUYSELLRATE, BUY1P, BUY1V, BUY2P, BUY2V, BUY3P, BUY3V, BUY4P, BUY4V, BUY5P, BUY5V, SELL1P, SELL1V, SELL2P, SELL2V, SELL3P, SELL3V, SELL4P, SELL4V, SELL5P, SELL5V,DIFFVOLDESC,DIFFBUYSELLVOL)
+		<foreach collection="list" index="" item="item" separator="union all">
+			select
+			#{item.stockCode,jdbcType=VARCHAR},
+			#{item.operTime,jdbcType=TIMESTAMP},
+			#{item.openPrice,jdbcType=FLOAT},
+			#{item.volume,jdbcType=INTEGER},
+			#{item.preClosePrice,jdbcType=FLOAT},
+			#{item.currPrice,jdbcType=FLOAT},
+			#{item.timeSeq,jdbcType=INTEGER},
+			#{item.diffVolume,jdbcType=INTEGER},
+			#{item.diffBuyVolume,jdbcType=INTEGER},
+			#{item.diffSellVolume,jdbcType=INTEGER},
+			#{item.buySellRate,jdbcType=FLOAT},
+			#{item.buy1P,jdbcType=FLOAT},
+			#{item.buy1v,jdbcType=INTEGER},
+			#{item.buy2P,jdbcType=FLOAT},
+			#{item.buy2v,jdbcType=INTEGER},
+			#{item.buy3P,jdbcType=FLOAT},
+			#{item.buy3v,jdbcType=INTEGER},
+			#{item.buy4P,jdbcType=FLOAT},
+			#{item.buy4v,jdbcType=INTEGER},
+			#{item.buy5P,jdbcType=FLOAT},
+			#{item.buy5v,jdbcType=INTEGER},
+			#{item.sell1P,jdbcType=FLOAT},
+			#{item.sell1v,jdbcType=INTEGER},
+			#{item.sell2P,jdbcType=FLOAT},
+			#{item.sell2v,jdbcType=INTEGER},
+			#{item.sell3P,jdbcType=FLOAT},
+			#{item.sell3v,jdbcType=INTEGER},
+			#{item.sell4P,jdbcType=FLOAT},
+			#{item.sell4v,jdbcType=INTEGER},
+			#{item.sell5P,jdbcType=FLOAT},
+			#{item.sell5v,jdbcType=INTEGER},
+			#{item.diffVolDesc,jdbcType=VARCHAR},
+			#{item.diffBuySelVol,jdbcType=INTEGER}
+			from dual
+		</foreach>
+	</insert>
+
+
+
+</mapper>

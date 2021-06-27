@@ -24,12 +24,21 @@ public class D {
 //        MediaPlayer _mediaPlayer = new MediaPlayer(_media);
 //        _mediaPlayer.play();
 //        System.out.println("a");
+
+
+
         Runtime rt = Runtime.getRuntime();
+
+//        Player audioPlayer = Manager.createRealizedPlayer(new File("").toURL());
+
         Process p = null;
         try {
-            p = rt.exec(" cmd.exe  /c start wmplayer D:/ffmpeg/file/download.mp3");
+
+            p = rt.exec(" cmd.exe  /c start wmplayer D:/ffmpeg/file/smsup.mp3");
+//            p.wait(100l);
+//            p.destroy();
             System.out.println("a"+p.toString());
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

@@ -406,7 +406,7 @@ public class HttpUtil {
             HttpClient httpclient = new HttpClient();
             httpclient.getParams().setParameter("http.protocol.version", HttpVersion.HTTP_1_1);
             httpclient.getParams().setParameter("http.protocol.content-charset", "GBK");
-            httpclient.getParams().setParameter("http.socket.timeout", new Integer(30 * 1000));
+            httpclient.getParams().setParameter("http.socket.timeout", new Integer(5 * 1000));
 
             GetMethod httppost = new GetMethod(sendUrl);
 //            if(StringUtil.isNotBlank(sContent)){
@@ -423,7 +423,7 @@ public class HttpUtil {
                 httppost.releaseConnection();
             }
         } catch (Exception e) {
-            log.error("*** 接口调用失败 : ", e);
+//            log.error("*** 接口调用失败 : ", e);
             throw new GeneralException("9999", e.getMessage(), e);
         }
         //      log.info("end post requst content return = " + str);

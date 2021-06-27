@@ -1,21 +1,16 @@
 package com.guoxc.info.web.services;
 
-import com.alibaba.fastjson.JSON;
-import com.guoxc.info.bean.info.StockBean;
 import com.guoxc.info.bean.info.StockDayBean;
 import com.guoxc.info.bean.info.StockDayInflectionBean;
-import com.guoxc.info.bean.info.StockSwingBean;
+import com.guoxc.info.bean.info.StockPredictBean;
+import com.guoxc.info.bean.info.StockTransverseBean;
 import com.guoxc.info.dao.BsStaticDataDao;
 import com.guoxc.info.dao.StockDao;
 import com.guoxc.info.utils.DateUtil;
 import com.guoxc.info.utils.FileUtil;
-import com.guoxc.info.utils.StringUtil;
-import com.guoxc.info.web.common.ConstantsInfo;
 import com.guoxc.info.web.control.StockControl;
 import com.guoxc.info.web.dao.BaseDao;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
-import org.apache.ibatis.session.SqlSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -48,18 +43,16 @@ public class StockPredictService {
     private int UPDAY = 10;
 
     /**
-     * 价格低位买入点： 1、 横盘后 下跌： 横盘后  下跌15%，   成交量变小。 （价格历史最低点， 60日最低点）     卖出点： 横盘价格抛50%，横盘价格上涨10% 后抛50%, 达到横盘价格附近后，下跌10，继续买进。
-     *                 2、 横盘持续50天后  上涨，涨幅比较大，8%以上。次日开盘价低于2% 买入（ 实际买入参考，无此数据 开盘成交量低于20日均线的3%）
+     * 价格低位买入点： 1、地位缩量买进（成交量低）
+     *                 2、横盘后 下跌： 横盘后  下跌15%，   成交量变小。 （价格历史最低点， 60日最低点）     卖出点： 横盘价格抛50%，横盘价格上涨10% 后抛50%, 达到横盘价格附近后，下跌10，继续买进。
+     *                 3、 横盘持续50天后  上涨，涨幅比较大，8%以上。次日开盘价低于2% 买入（ 实际买入参考，无此数据 开盘成交量低于20日均线的3%）
      *  价格中位       1、  震动缩量下跌： 成交量处于60日最小量附近，价格处于震荡范围低位。买入，  成交量放大时，上涨则卖出一部分，下跌则次日加仓。
      *
      * 价格高位        1、 首次大幅上涨后，回调到开始大幅上涨（超过4%）的价格时，开始买入。
      *
      *
-     *
-     * 低位： 横盘、震荡、波动
-     * 中位：
-     * 高位：
-     *
+     *特殊选股：
+     *       股价在中位， 成交量低，且连续大跌，跌幅为前20日平均振幅的60%以上。
      *
      * @param stockCode
      * @param date
@@ -69,7 +62,7 @@ public class StockPredictService {
 
     public void  predict(String stockCode,String date) throws ParseException {
 
-
+        List predictList = new ArrayList();
          Map param = new HashMap();
 
          if(StringUtils.isBlank(date)){
@@ -80,36 +73,554 @@ public class StockPredictService {
 
         Map stockHisMap = new HashMap();
 
-      List stockDayList =   baseDao.queryForList("com.guoxc.info.dao.StockDao.selectStockDay",param);
-        StockSwingBean stockSwingBean = (StockSwingBean) baseDao.selectOne("com.guoxc.info.dao.StockSwingDao.getStockStatByStockCode",param);
-        float  maxPrice =  stockSwingBean.getMaxPrice();
-        float  minPrice =  stockSwingBean.getMaxPrice();
-        long  minVol =  stockSwingBean.getMinVol();
+        List stockDayList =   baseDao.queryForList("com.guoxc.info.dao.StockDao.selectStockDay",param);
+        List stockTransverseList = baseDao.queryForList("com.guoxc.info.dao.StockSwingDao.queryRecentStockSwing",param);  //横盘信息
+        List stockInflectionList = baseDao.queryForList("com.guoxc.info.dao.stockInflection.getInflectionNewInfoByOrder",param);
+
+
+
         for(int i=0; i<stockDayList.size();i++ ){
             StockDayBean stockDayBean = (StockDayBean) stockDayList.get(i);
+            if(stockDayBean.getSeq()<60){
+                continue;
+            }
+            if(stockDayBean.getHighPrice()== stockDayBean.getLowPrice()){
+                if(stockDayBean.getMaxC60Price()/stockDayBean.getMinC60Price()<1.15 &&  stockDayBean.getV5Rate()<400){
+                    logger.info("次日买进,长期横盘大涨");
+                    saleStock(predictList,stockDayList, i ,"长期横盘大涨",stockDayBean.getMaxC60Price() ,0);
+                }
+                continue;
+            }
              float closePrice =  stockDayBean.getClosePrice();
             float minC60Price = stockDayBean.getMinC60Price();
             float maxC60Price = stockDayBean.getMaxC60Price();
             float diffPriceRate =  (closePrice-minC60Price)*100/minC60Price;
-            float bigDiffPriceRate =  (closePrice-minPrice)*100/minPrice;
-            saveHengPan(stockDayBean,stockHisMap);
-            if(diffPriceRate<15 && bigDiffPriceRate<50 ){ // 低位。
-
-
+            List recentInflectionList =  getRecentInflectionList(stockInflectionList,stockDayList,i);
+            if(recentInflectionList.size()<3){
+                logger.error("recentInflectionList size<3 "+stockCode);
+                continue;
+            }
+            Map swingMap  =  getInflectionPriceSwing(recentInflectionList);
+            Float maxPrice = null;
+            try{
+                maxPrice =  (Float)swingMap.get("maxPrice");
+            }catch(Exception e){
+                e.printStackTrace();;
             }
 
+            String priceSwingDesc = (String) swingMap.get("swingDesc");
+            List recentTransverseList=  getRecentTransverseList(stockTransverseList,stockDayList,i);
+            StockDayInflectionBean lastDayInflectionBean = (StockDayInflectionBean) recentInflectionList.get(0);
+            long minVol = getstockMinVol(recentInflectionList,stockCode,stockDayBean);
+            String currPriceDesc = getCurrPosition(stockDayBean,swingMap,lastDayInflectionBean);
+
+
+            if(priceSwingDesc.indexOf("巨涨") >-1 || priceSwingDesc.indexOf("巨跌") >-1){
+                  if( "低位横盘".equals(currPriceDesc) ||  "低位下降".equals(currPriceDesc) ||  "低位新低".equals(currPriceDesc)){
+                        if(stockDayBean.getVolume()<minVol*1.5 &&  stockDayBean.getV20Rate()<-30  && stockDayBean.getVolume()/stockDayBean.getV5Avg()-1<-0.20 ){
+                            logger.info("次日买进,巨幅变动");
+                            saleStock(predictList,stockDayList, i ,"巨变低位",maxPrice,0);
+                        }
+                  }
+            }else{
+                if(currPriceDesc.startsWith("低位")||currPriceDesc.startsWith("箱低") ){
+                    if(stockDayBean.getVolume()<minVol*1.5 &&  stockDayBean.getV20Rate()<-40  && stockDayBean.getV5Rate()<-30 ){
+                        saleStock(predictList,stockDayList, i ,currPriceDesc.substring(0,2),maxPrice,0);
+                    }
+                }
+            }
+
+            if(recentTransverseList.size()>0){
+                StockTransverseBean stockTransverseBean = (StockTransverseBean) recentTransverseList.get(0);
+                if(stockTransverseBean.getLastDay()>20 ){
+                    if( stockDayBean.getSeq()-  stockTransverseBean.getStockSeq()<=6 ){
+                          if(stockDayBean.getClosePrice()/stockTransverseBean.getMinPrice()<0.85 && stockDayBean.getV5Rate()<-40 && stockDayBean.getV20Rate()>-20){
+                              logger.info("次日买进，横盘首跌"+currPriceDesc.substring(0,2));
+                              saleStock(predictList,stockDayList, i ,currPriceDesc.substring(0,2),maxPrice,stockTransverseBean.getLastDay());
+
+                          }
+                    }
+                }
+            }
+            if( stockDayBean.getMaxC60Price()/stockDayBean.getMinC60Price()<1.15 && stockDayBean.getPriceRate()>80 &&  stockDayBean.getV5Rate()<400){
+                logger.info("次日买进,长期横盘大涨");
+                saleStock(predictList,stockDayList, i ,"长期横盘大涨",stockDayBean.getMaxC60Price(),0);
+            }
 
         }
 
+        if(predictList.size()>0){
+            baseDao.insert("com.guoxc.info.dao.StockPredictDao.insertStockPredictList",predictList);
+        }
+        logger.info(stockCode+" 检测结束");
 
-
-        getUpdayAndNormalVolList(stockDayList);
+//        getUpdayAndNormalVolList(stockDayList);
 
 
 
 
 
     }
+
+    /**
+     *
+     * @param stockDayList
+     * @param offset
+     * @param type  长期横盘大涨   巨变低位  箱低  低位  横盘首跌
+     */
+
+    private void saleStock(List predictList, List stockDayList, int offset,String type,float maxPrice,long lastDayNum){
+
+        StockDayBean tmpStockDayBean = (StockDayBean) stockDayList.get(offset);
+        StockPredictBean stockPredictBean = new StockPredictBean();
+        BeanUtils.copyProperties(tmpStockDayBean,stockPredictBean);
+        stockPredictBean.setBuyDesc(type);
+        stockPredictBean.setBuyMaxPrice(maxPrice);
+        stockPredictBean.setBuyLastDayNum(lastDayNum);
+
+         if("长期横盘大涨".equals(type)){
+               for(int i=offset+1;i<stockDayList.size();i++){
+                   StockDayBean stockDayBean = (StockDayBean) stockDayList.get(i);
+                   float upClosePrice = stockDayBean.getClosePrice()>stockDayBean.getOpenPrice()?stockDayBean.getClosePrice():stockDayBean.getOpenPrice();
+                   float upLineRate =  (stockDayBean.getHighPrice()-upClosePrice)/stockDayBean.getPreClosePrice() ;
+                   if( ( stockDayBean.getPriceRate()<-20 || upLineRate>0.03 )   && stockDayBean.getV5Rate()>0 ){
+                        //sale 卖出
+                       setSellInfo(stockPredictBean,stockDayBean);
+                       break;
+                   }
+               }
+         }else if("巨变低位".endsWith(type) ||"低位".endsWith(type) ){
+             for(int i=offset+1;i<stockDayList.size();i++){
+                 StockDayBean stockDayBean = (StockDayBean) stockDayList.get(i);
+                 float upClosePrice = stockDayBean.getClosePrice()>stockDayBean.getOpenPrice()?stockDayBean.getClosePrice():stockDayBean.getOpenPrice();
+                 float upLineRate =  (stockDayBean.getHighPrice()-upClosePrice)/stockDayBean.getPreClosePrice() ;
+                 if( ( stockDayBean.getPriceRate()<-30 || upLineRate>0.03 )   && stockDayBean.getV5Rate()>30 ){
+                     //sale 卖出
+                     setSellInfo(stockPredictBean,stockDayBean);
+                     break;
+                 }
+             }
+         }else if("箱低".endsWith(type) ){
+             for(int i=offset+1;i<stockDayList.size();i++){
+                 StockDayBean stockDayBean = (StockDayBean) stockDayList.get(i);
+                 float upClosePrice = stockDayBean.getClosePrice()>stockDayBean.getOpenPrice()?stockDayBean.getClosePrice():stockDayBean.getOpenPrice();
+                 float upLineRate =  (stockDayBean.getHighPrice()-upClosePrice)/stockDayBean.getPreClosePrice() ;
+                 if(  ( stockDayBean.getPriceRate()<-30    && stockDayBean.getV5Rate()>50 )   ||  stockDayBean.getClosePrice()/maxPrice>0.96  ){
+                     //sale 卖出
+                     setSellInfo(stockPredictBean,stockDayBean);
+                     break;
+                 }
+             }
+         }else if("横盘首跌".endsWith(type) ){
+
+             for(int i=offset+1;i<stockDayList.size();i++){
+                 StockDayBean stockDayBean = (StockDayBean) stockDayList.get(i);
+                 float upClosePrice = stockDayBean.getClosePrice()>stockDayBean.getOpenPrice()?stockDayBean.getClosePrice():stockDayBean.getOpenPrice();
+                 float upLineRate =  (stockDayBean.getHighPrice()-upClosePrice)/stockDayBean.getPreClosePrice() ;
+                 if(lastDayNum <30){
+                     if(  ( stockDayBean.getPriceRate()<-30    && stockDayBean.getV5Rate()>60 )   ||  stockDayBean.getClosePrice()/maxPrice>0.96  ){
+                         //sale 卖出
+                         setSellInfo(stockPredictBean,stockDayBean);
+                         break;
+                     }
+                 }else if(lastDayNum<70){
+                     if(  ( stockDayBean.getPriceRate()<-40    && stockDayBean.getV5Rate()>80 )   ||  stockDayBean.getClosePrice()/maxPrice>1.10  ){
+                         //sale 卖出
+                         setSellInfo(stockPredictBean,stockDayBean);
+                         break;
+                     }
+                 }else{
+                     if(  ( stockDayBean.getPriceRate()<-50    && stockDayBean.getV5Rate()>100 )   ||  stockDayBean.getClosePrice()/maxPrice>1.30  ){
+                         //sale 卖出
+                         setSellInfo(stockPredictBean,stockDayBean);
+                         break;
+                     }
+                 }
+             }
+         }
+
+        predictList.add(stockPredictBean);
+    }
+
+
+    private void setSellInfo(StockPredictBean stockPredictBean,StockDayBean stockDayBean){
+        stockPredictBean.setSellOperTime(stockDayBean.getOperTime());
+        stockPredictBean.setSellVol(stockDayBean.getVolume());
+        stockPredictBean.setSellClosePrice(stockDayBean.getClosePrice());
+        stockPredictBean.setSellV5Avg(stockDayBean.getV5Avg());
+        stockPredictBean.setSellV20Avg(stockDayBean.getV20Avg());
+        stockPredictBean.setSellPriceRate(stockDayBean.getPriceRate());
+        stockPredictBean.setLastDayNum( stockDayBean.getSeq()-stockPredictBean.getSeq());
+        stockPredictBean.setProfit(Math.round ((stockPredictBean.getSellClosePrice()/stockPredictBean.getClosePrice()-1)*1000));
+        stockPredictBean.setSellV5Rate(stockDayBean.getV5Rate());
+        stockPredictBean.setSellV20Rate(stockDayBean.getV20Rate());
+    }
+
+
+
+    private long getstockMinVol( List stockInflectionList,String stockCode,StockDayBean stockDayBean){
+        Map param = new HashMap();
+
+        param.put("stockCode",stockCode);
+        List tmpList = new ArrayList();
+        for(int i=0;i<stockInflectionList.size();i++){
+            tmpList.add( ((StockDayInflectionBean)stockInflectionList.get(i)).getOperTime());
+        }
+        param.put("operTimes",tmpList );
+        List list = baseDao.queryForList("com.guoxc.info.dao.StockDao.getStockDayByOperTime",param);
+        for(int i=0;i<list.size();){
+            StockDayBean tmpStockDayBean = (StockDayBean)list.get(i);
+            if(stockDayBean.getSeq()-tmpStockDayBean.getSeq()>250){
+                list.remove(i);
+            }else{
+                i++;
+            }
+        }
+       long minVol = 0l;
+        for(int i=0;i<list.size();i++){
+            StockDayBean tmpStockDayBean = (StockDayBean)list.get(i);
+            if(i==0){
+                minVol = tmpStockDayBean.getVolume();
+            }
+            if(tmpStockDayBean.getPriceRate()<0){
+                 if(tmpStockDayBean.getHighPrice()>tmpStockDayBean.getLowPrice()){
+                       if(minVol > tmpStockDayBean.getVolume()){
+                           minVol = tmpStockDayBean.getVolume();
+                       }
+                 }
+                 if(minVol > tmpStockDayBean.getV5Avg()){
+                     minVol = tmpStockDayBean.getV5Avg();
+                 }
+            }
+        }
+        if(minVol > stockDayBean.getMinV60Vol()){
+            minVol = stockDayBean.getMinV60Vol();
+        }
+      return minVol;
+    }
+
+
+
+
+      private String getCurrPosition(StockDayBean stockDayBean, Map swingMap,StockDayInflectionBean inflectionBean){
+          String result = null;
+          float maxcC60price = stockDayBean.getMaxC60Price();
+          float minC60Price = stockDayBean.getMinC60Price();
+          float maxInflecPrice= (float) swingMap.get("maxPrice");
+          float minInflecPrice= (float) swingMap.get("minPrice");
+          float priceRate60 = maxcC60price/minC60Price -1 ;
+          float priceRateInflection = maxInflecPrice/minInflecPrice -1 ;
+
+          float currPriceInflecRate = stockDayBean.getClosePrice()/minInflecPrice -1 ;
+
+          if(priceRateInflection>0.7){
+              if(currPriceInflecRate<0.20 ){
+                  result= "低位";
+              }else if(currPriceInflecRate<0.5){
+                  result= "中位";
+              }else {
+                  result= "高位";
+              }
+          }else if(priceRateInflection>0.3){
+              if(currPriceInflecRate<0.15 ){
+                  result= "低位";
+              }else if(currPriceInflecRate<0.3 ){
+                  result= "中位";
+              }else{
+                  result= "高位";
+              }
+          }else {
+              if(currPriceInflecRate<0.06 ){
+                  result= "箱低";
+              }else if(currPriceInflecRate<0.24){
+                  result= "箱中";
+              }else{
+                  result= "箱高";
+              }
+
+          }
+
+          if(priceRate60<0.15 ){  //横盘
+              result = result+"横盘";
+          }else {
+              if(inflectionBean.getSwingRate()>0 ){
+                 if( stockDayBean.getClosePrice()>inflectionBean.getClosePrice()){
+                     result = result+"新高";
+                 }else{
+                     result = result+"下降";
+                 }
+              }else {
+                  if( stockDayBean.getClosePrice()>inflectionBean.getClosePrice()){
+                      result = result+"上升";
+                  }else{
+                      result = result+"新低";
+                  }
+              }
+          }
+          return result;
+      }
+
+
+
+    private Map   getInflectionPriceSwing(List stockInflectionList){
+        Map result = new  HashMap();
+        String priceSwingStr = "";
+        for(int i=0;i<stockInflectionList.size();i++){
+            StockDayInflectionBean stockDayInflection =   (StockDayInflectionBean)stockInflectionList.get(i);
+            String desc=  getInflectionSwingDesc(stockDayInflection.getSwingRate());
+            priceSwingStr = priceSwingStr + desc+",";
+        }
+        result.put("swingDesc",priceSwingStr);
+         long allIntervalDay = 0;
+        if(stockInflectionList.size()>=3 ){
+            Float[] inflectionPrices = new Float[stockInflectionList.size()];
+
+            for(int i=0;i<stockInflectionList.size();i++){
+                StockDayInflectionBean inflectionBean = (StockDayInflectionBean) stockInflectionList.get(i);
+                inflectionPrices[i]=inflectionBean.getClosePrice();
+                allIntervalDay= allIntervalDay+inflectionBean.getIntervalDay();
+            }
+
+            Map<String,Float> oddnumberMap =   getMaxMin(inflectionPrices,"oddnumber");
+            Map<String,Float>  evennumberMap =   getMaxMin(inflectionPrices,"evennumber");
+            float oddRate = oddnumberMap.get("maxPrice")/oddnumberMap.get("minPrice")-1;
+            float evenRate = evennumberMap.get("maxPrice")/evennumberMap.get("minPrice")-1;
+            Map<String,Float> allMap =   getMaxMin(inflectionPrices,"all");
+            result.putAll(allMap);
+            if(oddRate<0.05 && evenRate<0.05 ){
+                float allRate = allMap.get("maxPrice")/allMap.get("minPrice")-1;
+                result.put("swingRate",allRate);
+            }
+        }
+        result.put("allIntervalDay",allIntervalDay);
+
+        return result;
+    }
+
+   private Map getMaxMin( Float[] inflectionPrices,String type){
+       Map  result = new HashMap();
+       float maxPrice = 0l;
+       float minPrice = 0l ;
+       int step = 1;
+       if("all".equals(type)){
+           maxPrice = inflectionPrices[0];
+           minPrice = inflectionPrices[0];
+           step =1;
+       }else if("oddnumber".equals(type)){
+           maxPrice = inflectionPrices[0];
+           minPrice = inflectionPrices[0];
+           step =2;
+       }else if("evennumber".endsWith(type)){
+           maxPrice = inflectionPrices[1];
+           minPrice = inflectionPrices[1];
+           step =2;
+       }
+
+       for(int i=step-1;i<inflectionPrices.length;i=i+step){
+           if(inflectionPrices[i]>maxPrice){
+               maxPrice =  inflectionPrices[i];
+           }else if(inflectionPrices[i] <minPrice){
+               minPrice = inflectionPrices[i];
+           }
+       }
+       result.put("maxPrice",maxPrice);
+       result.put("minPrice",minPrice);
+
+       return result;
+
+   }
+
+
+
+
+
+
+    private Map getTransverseInfo(List stockDayList,List recentTransverseList,int dealOffset){
+        Map result = new HashMap();
+        StockDayBean stockDayBean  = (StockDayBean) stockDayList.get(dealOffset);
+        int count =0;
+        long stockSeq = stockDayBean.getSeq();
+           for(int i=0;i<recentTransverseList.size();i++){
+               StockTransverseBean bean = (StockTransverseBean)  recentTransverseList.get(i);
+               for(int j=0;j<stockDayList.size();j++){
+                   StockDayBean tmpStockDayBean = (StockDayBean) stockDayList.get(i);
+                   if(bean.getOperTime().equals(tmpStockDayBean.getOperTime())){
+                       if((stockSeq-tmpStockDayBean.getSeq())<120){
+                           count ++;
+                           result.put("transversePrice"+count,bean.getMinPrice());
+                           result.put("transverseLast"+count,bean.getLastDay());
+                           result.put("transverse"+count,bean);
+                       }
+                   }
+               }
+
+           }
+         return result;
+    }
+
+    private List  getRecentInflectionList(List stockInflectionList, List stockDayList, int dealOffset) {
+
+        int offset = 0;
+        StockDayBean stockDayBean  = (StockDayBean) stockDayList.get(dealOffset);
+        Timestamp operTime = stockDayBean.getOperTime();
+        for(int i=0;i<stockInflectionList.size();i++){
+            StockDayInflectionBean inflectionBean = (StockDayInflectionBean) stockInflectionList.get(i);
+            if(inflectionBean.getOperTime().before(operTime)){
+                 boolean isConfirm = isConfirmInflection(inflectionBean,stockDayList,dealOffset);
+                 if(isConfirm){
+                     offset = i;
+                 }else{
+                     offset = i+1;
+                 }
+                break;
+            }else{
+                continue;
+            }
+        }
+        List list = new ArrayList();
+        long intervalNum = 0;
+        if(stockInflectionList.size() -9-offset>0){
+            for(int i=0;i<8 ;i++){
+              StockDayInflectionBean  stockDayInflectionBean =null;
+              if(offset+i<stockInflectionList.size()){
+                  stockDayInflectionBean =  (StockDayInflectionBean)stockInflectionList.get(offset+i);
+                  intervalNum = intervalNum+ stockDayInflectionBean.getIntervalDay();
+                  list.add(stockDayInflectionBean);
+                  if(intervalNum>250){
+                      break;
+                  }
+              }
+
+            }
+        }
+
+
+       return list;
+    }
+
+
+    private List  getRecentTransverseList(List stockTransverseList, List stockDayList, int dealOffset) {
+
+        int offset = 0;
+        boolean isFind = false;
+        StockDayBean stockDayBean  = (StockDayBean) stockDayList.get(dealOffset);
+        Timestamp operTime = stockDayBean.getOperTime();
+        for(int i=0;i<stockTransverseList.size();i++){
+            StockTransverseBean swingBean = (StockTransverseBean) stockTransverseList.get(i);
+            if(swingBean.getOperTime().before(operTime)){
+                offset = i;
+                isFind =true;
+                break;
+            }else{
+                continue;
+            }
+        }
+        List list = new ArrayList();
+        if(isFind){
+            list.add(((StockTransverseBean)stockTransverseList.get(offset)));
+        }
+        return list;
+    }
+
+
+
+
+
+
+//    private String getSwingDesc(float priceRate){
+//        String result = "";
+//        if(priceRate>1.5 ){
+//            result ="巨涨";
+//        }else if(priceRate>1.25){
+//            result ="大涨";
+//        }else if(priceRate>1.08){
+//            result ="上涨";
+//        }else if(priceRate>1){
+//            result ="微涨";
+//        }else  if(priceRate>-0.92){
+//            result ="微跌";
+//        }else  if(priceRate>0.85){
+//            result ="下跌";
+//        }else  if(priceRate>0.65){
+//            result ="大跌";
+//        }else {
+//            result ="巨跌";
+//        }
+//        return result+",";
+//    }
+
+    private String getInflectionSwingDesc(float priceRate){
+        String result = "";
+        if(priceRate>500 ){
+            result ="巨涨";
+        }else if(priceRate>250){
+            result ="大涨";
+        }else if(priceRate>150){
+            result ="上涨";
+        }else if(priceRate>1){
+            result ="微涨";
+        }else  if(priceRate>-130){
+            result ="微跌";
+        }else  if(priceRate>-200){
+            result ="下跌";
+        }else  if(priceRate>-330){
+            result ="大跌";
+        }else {
+            result ="巨跌";
+        }
+        return result;
+    }
+
+
+
+    private  boolean isConfirmInflection(StockDayInflectionBean inflectionBean,  List stockDayList,int dealOffset){
+        StockDayBean stockDayBean  = (StockDayBean) stockDayList.get(dealOffset);
+        StockDayBean tmpStockDayBean = null;
+          if(inflectionBean.getSwingRate()>0){
+              float minPrice = stockDayBean.getClosePrice();
+              for(;;){
+                  dealOffset -- ;
+                  if(dealOffset<0){
+                      break;
+                  }
+                  tmpStockDayBean = (StockDayBean) stockDayList.get(dealOffset);
+                  if(tmpStockDayBean.getOperTime().after(inflectionBean.getOperTime())){
+                      if(tmpStockDayBean.getClosePrice()<minPrice){
+                          minPrice = tmpStockDayBean.getClosePrice();
+                      }
+                  }else{
+                      break;
+                  }
+              }
+              if( (minPrice-inflectionBean.getClosePrice())/inflectionBean.getClosePrice() <-0.08){
+                  return true;
+              }else{
+                  return false;
+              }
+          }else{
+              float maxPrice = stockDayBean.getClosePrice();
+              for(;;){
+                  dealOffset -- ;
+                  if(dealOffset<0){
+                      break;
+                  }
+                  tmpStockDayBean = (StockDayBean) stockDayList.get(dealOffset);
+                  if(tmpStockDayBean.getOperTime().after(inflectionBean.getOperTime())){
+                      if(tmpStockDayBean.getClosePrice()>maxPrice){
+                          maxPrice = tmpStockDayBean.getClosePrice();
+                      }
+                  }else{
+                      break;
+                  }
+              }
+              if( (maxPrice-inflectionBean.getClosePrice())/inflectionBean.getClosePrice() >0.08){
+                  return true;
+              }else{
+                  return false;
+              }
+          }
+    }
+
 
     private void getStockRecentInfo(String stockCode){
         Map param = new HashMap();

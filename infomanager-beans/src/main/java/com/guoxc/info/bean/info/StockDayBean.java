@@ -78,6 +78,7 @@ public class StockDayBean  extends BaseBean {
     private long maxV20Vol;
     private long minV60Vol;
     private long maxV60Vol;
+    private long s20Rate;
 
     public String getStockName() {
         return stockName;
@@ -614,5 +615,13 @@ public class StockDayBean  extends BaseBean {
 
     public void setMaxV60Vol(long maxV60Vol) {
         this.maxV60Vol = maxV60Vol;
+    }
+
+    public long getS20Rate() {
+        return s20Rate;
+    }
+
+    public void setS20Rate(long s20Rate) {
+        this.s20Rate = s20Rate;
     }
 }

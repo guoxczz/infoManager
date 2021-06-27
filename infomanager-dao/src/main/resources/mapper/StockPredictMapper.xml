@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.guoxc.info.dao.StockPredictDao" >
+
+	<insert id="insertStockPredictList" >
+		insert into T_STOCK_PREDICT (STOCKCODE, OPERTIME, OPENPRICE, HIGHPRICE, LOWPRICE, CLOSEPRICE, VOLUME, TURNOVER, C5AVG, C20AVG, C60AVG, V5AVG, V20AVG, V60AVG,  PRICE_RATE, SWING, V5_RATE, V20_RATE,
+		 SEQ, JZ_TAIL,JZ_BOY,MAXC20PRICE,MAXC60PRICE,MINC20PRICE,MINC60PRICE,SELLOPERTIME,SELLVOL,SELLCLOSEPRICE,SELLV5AVG,SELLV20AVG,SELLPRICERATE,SELLDESC,BUYDESC,BUYMAXPRICE,LASTDAYNUM,BUYLASTDAYNUM,PROFIT,SELLV5RATE,SELLV20RATE)
+
+		<foreach collection="list" index="" item="item" separator="union all">
+			select #{item.stockCode},#{item.operTime},#{item.openPrice},#{item.highPrice},#{item.lowPrice},#{item.closePrice},#{item.volume},#{item.turnover},#{item.c5Avg},#{item.c20Avg},#{item.c60Avg},#{item.v5Avg},#{item.v20Avg},#{item.v60Avg},#{item.priceRate},#{item.swing},#{item.v5Rate},#{item.v20Rate},#{item.seq},
+			#{item.jzTail},#{item.jzBody},#{item.maxC20Price},#{item.maxC60Price},#{item.minC20Price},#{item.minC60Price},
+			#{item.sellOperTime,jdbcType=TIMESTAMP},#{item.sellVol},#{item.sellClosePrice},#{item.sellV5Avg},#{item.sellV20Avg},#{item.sellPriceRate},#{item.sellDesc,jdbcType=VARCHAR},#{item.buyDesc,jdbcType=VARCHAR},#{item.buyMaxPrice},#{item.buyLastDayNum},#{item.lastDayNum},#{item.profit},#{item.sellV5Rate},#{item.sellV20Rate}
+			from dual
+		</foreach>
+	</insert>
+
+</mapper>
